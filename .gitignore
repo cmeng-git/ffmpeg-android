@@ -1,3 +1,12 @@
+*.o
+build
+toolchain-*
+libpng-*
+lame-*
+x264
+ffmpeg
+
+# Created by http://www.gitignore.io
 # Prerequisites
 *.d
 
