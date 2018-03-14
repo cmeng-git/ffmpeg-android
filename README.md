@@ -3,36 +3,59 @@
 
 * FFmpeg for Android with x264 and lame options
 
-Supported Architecture
+Supported android ABI's
 ----
 * armeabi
 * armeabi-v7a
 * arm64-v8a
-* x86
-* x86_64
 * mips
 * mips64
+* x86
+* x86_64
 
 Instructions
 ----
-* Set environment ANDROID_NDK variable e.g. /opt/android/android-ndk-r10e
+* Set environment ANDROID_NDK variable e.g. /opt/android/android-ndk-r16b
   1. export ANDROID_NDK={Android NDK Base Path}
-* NDK verification status:
-  1. x264: android-ndk-r10e; android-ndk-r15c; android-sdk/ndk-bundle for API-21 with 64-bit build
-  2. lame (3.99.5): android-ndk-r10e for API-15 without 64-bit build
-  3. ffmpeg android-android-ndk-r10e (API-15: without 64-bit build; other NDK have undefined reference stderr, stdout etc even with API-21)
-  4. android-ndk-r10e does not support clang, however android-ndk-r15c does
-* Install all the build tools if missing
-  1. sudo apt-get --quiet --yes install build-essential git autoconf libtool pkg-config gperf gettext yasm python-lxml
+* NDK verification status (build with clang/clang++ and API-21 unless otherwise specified):
+  1. x264: android-sdk/ndk-bundle, android-ndk-r16b, android-ndk-r15c, android-ndk-r10e (build all)
+  2. lame-3.99.5: android-ndk-r16b (build all except arm64-v8a); android-ndk-r10e (with gcc/g++; all except arm64-v8a)
+  3. ffmpeg android-ndk-r16b (build all except arm64-v8a and mips64)
+  4. clang needs android-ndk-r15c min for support. Change setttins.sh with clang=>gcc and clang++=>g++ if you need lower ndk version
 * To fetch and update submodules and libraries; use ./init_update_libs.sh command
   1. ./init_update_libs.sh
-* Run either one of the following commands to compile ffmpeg for all, custom or one the supported architecture
+  2. edit the ./init_update_libs.sh files for your desired module version
+* Run either one of the following commands to compile ffmpeg for all or one the supported ABI's
   1. ./ffmpeg-android_build.sh
-  2. As #1 but create custom setting.sh#ARCHS=("armeabi" "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mips" "mips64") for your project
-  3. ./ffmpeg-android_build.sh armeabi-v7a
-* To support 64bit libraries built, change setting.sh#ANDROID_API=21; min API for 64-bit library build.
-* All the generated static libraries and includes are in ./build directory.
-* Note: Some of the defined architecture settings may need to tweak as each module library configure options may change over time.
+  2. e.g ./ffmpeg-android_build.sh armeabi-v7a
+  3. As #1 but create custom settings.sh#ABIS=("armeabi" "armeabi-v7a" "arm64-v8a" "mips" "mips64" "x86" "x86_64") for your project
+* To support 64bit libraries built, change settings.sh#ANDROID_API=21; min API for 64-bit library build.
+* All the generated static libraries and includes are in ./build/ffmpeg/android/<ABI> directory.
+
+Help:
+-------
+* Set up Linux/Ubuntu development environment with the below build tools
+  1. sudo apt-get --quiet --yes install build-essential git autoconf libtool pkg-config gperf gettext yasm python-lxml
+
+* Patches for Sub-module
+  1. ./ffmpeg-android_build.sh includes the patches for the sub-modules 
+  2. ffmpeg-android_patch.sh applies patches to the relevant sub-module with patch files from ./pathes directory
+  3. edit these files to include additional patch if required.
+
+* see https://developer.android.com/ndk/guides/abis.html#Supported ABIs
+* Android recommended ABI's support; others have deprecated in r16 and will be removed in r17
+ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+
+Note:
+-------
+Both the android NDK, ffmpeg and its sub-modules are in continous update, it is likely that
+some of the defined ABI's settings may need to be tweaked as submodule configure have new changes.
+
+Please refer to the following sites which may offer solution for problems you may experience.
+* https://ffmpeg.org/pipermail/ffmpeg-user/2016-January/030202.html
+* https://www.mail-archive.com/ffmpeg-devel@ffmpeg.org/msg62644.html
+* http://alientechlab.com/how-to-build-ffmpeg-for-android/
+
 
 License
 -------
