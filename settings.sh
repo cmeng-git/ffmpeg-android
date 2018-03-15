@@ -32,8 +32,8 @@ NDK_ABI_VERSION=4.9
 # Do not change naming convention of the ABIS; see:
 # https://developer.android.com/ndk/guides/abis.html#Native code in app packages
 # Android recomended architecture support; others are deprecated
-ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-#ABIS=("armeabi" "armeabi-v7a" "arm64-v8a" "mips" "mips64" "x86" "x86_64")
+# ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+ABIS=("armeabi" "armeabi-v7a" "arm64-v8a" "mips" "mips64" "x86" "x86_64")
 
 BASEDIR=`pwd`
 TOOLCHAIN_PREFIX=${BASEDIR}/toolchain-android
@@ -63,7 +63,7 @@ case $1 in
     NDK_ARCH='arm'
     NDK_ABIARCH='arm-linux-androideabi'
     NDK_CROSS_PREFIX="${NDK_ABIARCH}"
-    CFLAGS="$CFLAGS -march=armv7-a -Wl,--fix-cortex-a8 -marm -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    CFLAGS="$CFLAGS -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
 
     # arm v7vfpv3
     # CFLAGS="$CFLAGS -march=$CPU -marm -mfloat-abi=softfp -mfpu=vfpv3-d16"

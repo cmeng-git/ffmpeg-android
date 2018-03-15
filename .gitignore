@@ -1,5 +1,5 @@
 *.o
-build
+build/ffmpeg/share
 toolchain-*
 libpng-*
 lame-*

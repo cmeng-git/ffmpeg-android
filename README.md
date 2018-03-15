@@ -1,5 +1,4 @@
 # ffmpeg-android
-==============
 
 * FFmpeg for Android with x264 and lame options
 
@@ -27,7 +26,7 @@ Instructions
   2. edit the ./init_update_libs.sh files for your desired module version
 * Run either one of the following commands to compile ffmpeg for all or one the supported ABI's
   1. ./ffmpeg-android_build.sh
-  2. e.g ./ffmpeg-android_build.sh armeabi-v7a
+  2. ./ffmpeg-android_build.sh armeabi-v7a (example)
   3. As #1 but create custom settings.sh#ABIS=("armeabi" "armeabi-v7a" "arm64-v8a" "mips" "mips64" "x86" "x86_64") for your project
 * To support 64bit libraries built, change settings.sh#ANDROID_API=21; min API for 64-bit library build.
 * All the generated static libraries and includes are in ./build/ffmpeg/android/<ABI> directory.
@@ -55,6 +54,7 @@ Please refer to the following sites which may offer solution for problems you ma
 * https://ffmpeg.org/pipermail/ffmpeg-user/2016-January/030202.html
 * https://www.mail-archive.com/ffmpeg-devel@ffmpeg.org/msg62644.html
 * http://alientechlab.com/how-to-build-ffmpeg-for-android/
+* https://en.wikipedia.org/wiki/List_of_ARM_microarchitectures
 
 
 License
