@@ -1,5 +1,5 @@
-*.o
-build/ffmpeg/share
+build/ffmpeg/android/*/share
+build/ffmpeg/android/*/bin
 toolchain-*
 libpng-*
 lame-*

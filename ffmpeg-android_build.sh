@@ -16,7 +16,7 @@ do
     ./x264_build.sh "${ABIS[i]}" 1 || exit 1
     #./libpng_build.sh "${ABIS[i]}" 1 || exit 1
     ./lame_build.sh "${ABIS[i]}" 1 || exit 1
-    /ffmpeg_build.sh "${ABIS[i]}" 1 || exit 1
+    ./ffmpeg_build.sh "${ABIS[i]}" 1 || exit 1
   fi
 done
 echo -e "*** BUILD COMPLETED ***\n"
