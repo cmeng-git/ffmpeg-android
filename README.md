@@ -18,7 +18,7 @@ Instructions
   1. export ANDROID_NDK={Android NDK Base Path}
 * NDK verification status (build with clang/clang++ and API-21 unless otherwise specified):
   1. x264: android-sdk/ndk-bundle, android-ndk-r16b, android-ndk-r15c, android-ndk-r10e (build all)
-  2. lame-3.99.5: android-ndk-r16b (build all except arm64-v8a); android-ndk-r10e (with gcc/g++; all except arm64-v8a)
+  2. lame-3.100: android-ndk-r16b (build all)
   3. ffmpeg android-ndk-r16b (build all except arm64-v8a and mips64)
   4. clang needs android-ndk-r15c min for support. Change setttins.sh with clang=>gcc and clang++=>g++ if you need lower ndk version
 * To fetch and update submodules and libraries; use ./init_update_libs.sh command

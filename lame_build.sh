@@ -2,7 +2,7 @@
 echo -e "\n\n** BUILD STARTED: lame for ${1} **"
 . settings.sh $*
 
-pushd lame-3.99.5
+pushd lame-3.100
 make clean
 
 ./configure \
