@@ -20,32 +20,21 @@ echo -e "\n\n** BUILD STARTED: ffmpeg for ${1} **"
 pushd ffmpeg
 make clean
 
-case $1 in
-  armeabi)
-    CPU='armv5'
-  ;;
-  armeabi-v7a)
-    #CPU='armv7-a'
-    CPU='cortex-a8'
-  ;;
-  arm64-v8a)
-    CPU='armv8-a'
-  ;;
-  mips)
-    # unknown cpu - use also for -march
-    CPU='mips32'
-  ;;
-  mips64)
-    # cpu incorrect
-    CPU='mips64'
-  ;;
-  x86)
-    CPU='i686'
-  ;;
-  x86_64)
-    CPU='x86_64'
-  ;;
-esac
+MODULES=""
+for m in "$@"
+  do
+    case $m in
+      x264)
+        MODULES="$MODULES --enable-gpl --enable-version3 --enable-libx264"
+      ;;
+      png)
+        MODULES="$MODULES --enable-libpng"
+      ;;
+      lame)
+        MODULES="$MODULES --enable-libmp3lame"
+      ;;
+    esac
+ done
 
 ./configure \
   --prefix=$PREFIX \
@@ -57,15 +46,13 @@ esac
   --enable-cross-compile \
   --disable-debug \
   --disable-doc \
-  --enable-gpl \
-  --enable-version3 \
   --enable-static \
   --disable-shared \
   --enable-pic \
   --disable-runtime-cpudetect \
   --enable-pthreads \
   --enable-hardcoded-tables \
-  --enable-libx264 \
+  $MODULES \
   --disable-programs \
   --disable-ffplay \
   --disable-ffprobe \

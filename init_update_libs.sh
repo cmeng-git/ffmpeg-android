@@ -3,6 +3,10 @@
 echo "============================================"
 echo "Updating submodules"
 git submodule update --init
+
+# get submodule branch update if any
+# git submodule update --remote
+
 echo "============================================"
 echo "Updating lame and libpng"
 # rm -rf libpng-*

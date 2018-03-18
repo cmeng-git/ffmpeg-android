@@ -4,23 +4,27 @@
 
 Supported android ABI's
 ----
-* armeabi
+* armeabi*
 * armeabi-v7a
 * arm64-v8a
-* mips
-* mips64
 * x86
 * x86_64
+* mips*
+* mips64*
+
+Note: *-Deprecated in android NDK r16. Will be removed in r17
+see https://developer.android.com/ndk/guides/abis.html#Supported ABIs
 
 Instructions
 ----
 * Set environment ANDROID_NDK variable e.g. /opt/android/android-ndk-r16b
   1. export ANDROID_NDK={Android NDK Base Path}
 * NDK verification status (build with clang/clang++ and API-21 unless otherwise specified):
-  1. x264: android-sdk/ndk-bundle, android-ndk-r16b, android-ndk-r15c, android-ndk-r10e (build all)
-  2. lame-3.100: android-ndk-r16b (build all)
-  3. ffmpeg android-ndk-r16b (build all except arm64-v8a and mips64)
-  4. clang needs android-ndk-r15c min for support. Change setttins.sh with clang=>gcc and clang++=>g++ if you need lower ndk version
+  1. x264: ndk-r16b (build all; but arm64-v8a libx.a has own undefined references e.g. x264_8_... x264_10...)
+  2. lame-3.100: ndk-r16b (build all)
+  3. ffmpeg ndk-r16b (build all)
+  4. clang support needs min ndk-r12c, but may not neccessary works for all ABIS (64-bit built has problem)
+  5. Change setttins.sh with clang=>gcc and clang++=>g++ if you need lower ndk version
 * To fetch and update submodules and libraries; use ./init_update_libs.sh command
   1. ./init_update_libs.sh
   2. edit the ./init_update_libs.sh files for your desired module version
@@ -41,9 +45,7 @@ Help:
   2. ffmpeg-android_patch.sh applies patches to the relevant sub-module with patch files from ./pathes directory
   3. edit these files to include additional patch if required.
 
-* see https://developer.android.com/ndk/guides/abis.html#Supported ABIs
-* Android recommended ABI's support; others have deprecated in r16 and will be removed in r17
-ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+* x264.a generated for arm64-v8a has undefined references to its own .o files e.g. x264_8_... x264_10... Seems to be x264 problem.
 
 Note:
 -------

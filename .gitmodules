@@ -1,7 +1,6 @@
 [submodule "ffmpeg"]
 	path = ffmpeg
 	url = git://source.ffmpeg.org/ffmpeg.git
-	branch = release/3.4
 [submodule "x264"]
 	path = x264
 	url = git://git.videolan.org/x264.git
