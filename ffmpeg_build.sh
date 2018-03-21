@@ -25,7 +25,10 @@ for m in "$@"
   do
     case $m in
       x264)
-        MODULES="$MODULES --enable-gpl --enable-version3 --enable-libx264"
+        MODULES="$MODULES --enable-libx264 --enable-gpl --enable-version3"
+      ;;
+      vpx)
+        MODULES="$MODULES --enable-libvpx"
       ;;
       png)
         MODULES="$MODULES --enable-libpng"
@@ -36,6 +39,9 @@ for m in "$@"
     esac
  done
 
+# do no set ld option and use as=gcc for clang
+TC_OPTIONS="--nm=${NM} --ar=${AR} --as=${CROSS_PREFIX}gcc --strip=${STRIP} --cc=${CC} --cxx=${CXX}"
+
 ./configure \
   --prefix=$PREFIX \
   --cross-prefix=$CROSS_PREFIX \
@@ -44,6 +50,7 @@ for m in "$@"
   --arch=$NDK_ARCH \
   --cpu=$CPU \
   --enable-cross-compile \
+  $TC_OPTIONS \
   --disable-debug \
   --disable-doc \
   --enable-static \
@@ -59,8 +66,8 @@ for m in "$@"
   --enable-x86asm \
   --extra-cflags="-I$PREFIX/include $CFLAGS" \
   --extra-ldflags="-L$PREFIX/lib $LDFLAGS" \
-  --extra-libs="-lgcc" \
   --extra-cxxflags="$CXXFLAGS" \
+  --extra-libs="-lgcc" \
   --pkg-config=$FFMPEG_PKG_CONFIG || exit 1
 
 make -j${HOST_NUM_CORES} && make install || exit 1

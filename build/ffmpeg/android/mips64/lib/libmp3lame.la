@@ -17,7 +17,7 @@ old_library='libmp3lame.a'
 inherited_linker_flags=''
 
 # Libraries that this one depends upon.
-dependency_libs=' -lm'
+dependency_libs=' -L/home/cmeng/workspace/ndk/ffmpeg-android/toolchain-android/sysroot/usr/lib -lc -ldl -llog -lm'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''

@@ -2,7 +2,7 @@
 . settings.sh
 
 # defined modules to be include in ffmpeg built
-MODULES=("x264" "lame")
+MODULES=("vpx" "x264" "lame")
 
 # Applying required patches
 echo -e "\n*** Applying patches... ***"
@@ -20,11 +20,14 @@ for ((i=0; i < ${#ABIS[@]}; i++))
       for m in "${MODULES[@]}"
       do
         case $m in
+          vpx)
+            ./vpx_build.sh "${ABIS[i]}" 1 || exit 1
+          ;;
           x264)
             ./x264_build.sh "${ABIS[i]}" 1 || exit 1
           ;;
           png)
-            ./libpng_build.sh "${ABIS[i]}" 1 || exit 1
+            #./libpng_build.sh "${ABIS[i]}" 1 || exit 1
           ;;
           lame)
             ./lame_build.sh "${ABIS[i]}" 1 || exit 1

@@ -21,10 +21,11 @@ Instructions
   1. export ANDROID_NDK={Android NDK Base Path}
 * NDK verification status (build with clang/clang++ and API-21 unless otherwise specified):
   1. x264: ndk-r16b (build all; but arm64-v8a libx.a has own undefined references e.g. x264_8_... x264_10...)
-  2. lame-3.100: ndk-r16b (build all)
-  3. ffmpeg ndk-r16b (build all)
-  4. clang support needs min ndk-r12c, but may not neccessary works for all ABIS (64-bit built has problem)
-  5. Change setttins.sh with clang=>gcc and clang++=>g++ if you need lower ndk version
+  2. libvpx-1.7.0: ndk-r15c (build all; ndk-r16 has errors - see vpx_build.sh); arm64-v8a libvpx.a not compatible with ffmpeg;
+  3. lame-3.100: ndk-r16b (build all)
+  4. ffmpeg ndk-r16b (build all)
+  5. clang support needs min ndk-r12c, but may not neccessary works for all ABIS (64-bit built has problem)
+  6. Change setttins.sh with clang=>gcc and clang++=>g++ if you need lower ndk version
 * To fetch and update submodules and libraries; use ./init_update_libs.sh command
   1. ./init_update_libs.sh
   2. edit the ./init_update_libs.sh files for your desired module version
