@@ -14,11 +14,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/Link-Options.html#Link-Options
+# Data relocation and protection (RELRO): LDLFAGS="-z relro -z now"
+# i686-linux-android-ld: -Wl,-z,relro -Wl,-z,now: unknown options
+# lame checks stdlib for linkage! omit -nostdlib
+
+# LDFLAGS='-pie -fuse-ld=gold -Wl,-z,relro -Wl,-z,now -nostdlib -lc -lm -ldl -llog'
+# -fuse-ld=gold: use ld.gold linker but unavailable for ABI mips and mips64
+LDFLAGS='-pie -lc -lm -ldl -llog'
+
+
 echo -e "\n\n** BUILD STARTED: ffmpeg for ${1} **"
 . settings.sh $*
 
 pushd ffmpeg
 make clean
+
+case $1 in
+  armeabi)
+    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+  ;;
+  armeabi-v7a)
+    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+  ;;
+  arm64-v8a)
+    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+  ;;
+  x86)
+    LDFLAGS="$LDFLAGS" 
+  ;;
+  x86_64)
+    LDFLAGS="$LDFLAGS" 
+  ;;
+  mips)
+    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+  ;;
+  mips64)
+    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+  ;;
+esac
+
+# export LDFLAGS="-Wl,-rpath-link=${NDK_SYSROOT}/usr/lib -L${NDK_SYSROOT}/usr/lib ${LDFLAGS}"
+export LDFLAGS="${LDFLAGS}"
 
 MODULES=""
 for m in "$@"

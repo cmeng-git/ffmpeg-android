@@ -20,10 +20,11 @@ Instructions
 * Set environment ANDROID_NDK variable e.g. /opt/android/android-ndk-r16b
   1. export ANDROID_NDK={Android NDK Base Path}
 * NDK verification status (build with clang/clang++ and API-21 unless otherwise specified):
-  1. x264: ndk-r16b (build all; but arm64-v8a libx.a has own undefined references e.g. x264_8_... x264_10...)
-  2. libvpx-1.7.0: ndk-r15c (build all; ndk-r16 has errors - see vpx_build.sh); arm64-v8a libvpx.a not compatible with ffmpeg;
-  3. lame-3.100: ndk-r16b (build all)
-  4. ffmpeg ndk-r16b (build all)
+  1. x264: ndk-r16b, ndk-r15c (build all; but arm64-v8a libx.a has own undefined references e.g. x264_8_... x264_10...)
+  2. libvpx-1.7.0: ndk-r15c (build all except mips and mips64; ndk-r16b built has errors - see vpx_build.sh);
+  configure with Target=arm64-android-gcc has error which uses incorrect cc i.e. arm-linux-androideabi-gcc;
+  3. lame-3.100: ndk-r16b, ndk-r15c (build all)
+  4. ffmpeg ndk-r16b, ndk-r15c (build all)
   5. clang support needs min ndk-r12c, but may not neccessary works for all ABIS (64-bit built has problem)
   6. Change setttins.sh with clang=>gcc and clang++=>g++ if you need lower ndk version
 * To fetch and update submodules and libraries; use ./init_update_libs.sh command
@@ -44,9 +45,9 @@ Help:
 * Patches for Sub-module
   1. ./ffmpeg-android_build.sh includes the patches for the sub-modules 
   2. ffmpeg-android_patch.sh applies patches to the relevant sub-module with patch files from ./pathes directory
-  3. edit these files to include additional patch if required.
+  3. edit these files to include additional patches if required.
 
-* x264.a generated for arm64-v8a has undefined references to its own .o files e.g. x264_8_... x264_10... Seems to be x264 problem.
+* x264.a generated for arm64-v8a has undefined references to its own *.o files e.g. x264_8_... x264_10... Seems to be x264 configure problem.
 
 Note:
 -------
@@ -79,6 +80,4 @@ License
     See the License for the specific language governing permissions and
     limitations under the License.
 
-
-[Privacy Policy](http://atalk.sytes.net/privacypolicy.html) 
 

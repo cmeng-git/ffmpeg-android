@@ -34,7 +34,6 @@ NDK_ABI_VERSION=4.9
 # Android recomended architecture support; others are deprecated
 # ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 ABIS=("armeabi" "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mips" "mips64")
-#ABIS=("arm64-v8a" "x86" "x86_64" "mips" "mips64")
 
 BASEDIR=`pwd`
 TOOLCHAIN_PREFIX=${BASEDIR}/toolchain-android
@@ -47,22 +46,16 @@ NDK=${ANDROID_NDK}
 HOST_NUM_CORES=$(nproc)
 
 # https://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Optimize-Options.html
-# CFLAGS='-fPIE -fPIC -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-strict-overflow -fstack-protector-all'
-# CFLAGS='-fPIC -funwind-tables -fno-strict-overflow -fstack-protector-all -fno-strict-aliasing'
-CFLAGS='-fPIE -fPIC -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-strict-overflow -fstack-protector-all -fno-strict-aliasing'
+# Note: vpx with ABIs x86 and x86_64 build has error with option -fstack-protector-all
+CFLAGS="-fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -fno-strict-overflow -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
 
-# https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/Link-Options.html#Link-Options
-# Data relocation and protection (RELRO): LDLFAGS="-z relro -z now" 
-# lame checks stdlib for linkage! omit -nostdlib
-# LDFLAGS='-pie -Wl,-z,relro -Wl,-z,now -nostdlib -lc -lm -ldl -llog'
-LDFLAGS='-pie -Wl,-z,relro -Wl,-z,now -lc -lm -ldl -llog'
-
-# Do not modify any of the NDK_ARCH, CPU and -march unless you are sure.
+# Do not modify any of the NDK_ARCH, CPU and -march unless you are very sure.
 # The settings are used by <ARCH>-linux-android-gcc and submodule configure
 # https://en.wikipedia.org/wiki/List_of_ARM_microarchitectures
 # $NDK/toolchains/llvm/prebuilt/...../includellvm/ARMTargetParser.def etc
 # ARCH - should be one from $ANDROID_NDK/platforms/android-$API/arch-* [arm / arm64 / mips / mips64 / x86 / x86_64]"
 # https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html
+
 case $1 in
   # Deprecated in r16. Will be removed in r17
   armeabi)
@@ -91,13 +84,11 @@ case $1 in
   arm64-v8a)
     # Valid cpu = armv8-a cortex-a35, cortex-a53, cortec-a57 etc. but -march=armv8-a is required
     # x264 build has own undefined references e.g. x264_8_pixel_sad_16x16_neon - show up when build ffmpeg 
+    # -march valid only for ‘armv8-a’, ‘armv8.1-a’, ‘armv8.2-a’, ‘armv8.3-a’ or ‘armv8.4-a’ or native (only armv8-a is valid for lame build).
     CPU='cortex-a57'
     HOST='aarch64-linux'
     NDK_ARCH='arm64'
     NDK_ABIARCH='aarch64-linux-android'
-    # -march valid only for ‘armv8-a’, ‘armv8.1-a’, ‘armv8.2-a’, ‘armv8.3-a’ or ‘armv8.4-a’ or native (only armv8-a is valid for lame build).
-	 # vpx needs additional neon options but not valid in ffmpeg build. see vpx_build.sh
-    # valid arguments to '-mfpu=' are: crypto-neon-fp-armv8 fp-armv8 fpv4-sp-d16 neon neon-fp-armv8 neon-fp16 neon-vfpv4 vfp vfp3 vfpv3 vfpv3-d16 vfpv3-d16-fp16 vfpv3-fp16 vfpv3xd vfpv3xd-fp16 vfpv4 vfpv4-d16
     CFLAGS="$CFLAGS -march=armv8-a"
     ASFLAGS=""
   ;;
@@ -106,7 +97,7 @@ case $1 in
     HOST='i686-linux'
     NDK_ARCH='x86'
     NDK_ABIARCH='i686-linux-android'
-    CFLAGS="$CFLAGS -O2 -march=$CPU -mtune=intel -mssse3 -mfpmath=sse -m32"
+    CFLAGS="$CFLAGS -O2 -march=$CPU -mtune=intel -msse3 -mfpmath=sse -m32"
     ASFLAGS="-D__ANDROID__"
   ;;
   x86_64)
@@ -131,7 +122,7 @@ case $1 in
     ASFLAGS=""
   ;;
   mips64)
-    # -march=mips64r6 works for clangs but complain by ffmpeg (use -march=$CPU), reverse when -march=i6400 - so omit it in CFLAG works for both
+    # -march=mips64r6 works for clangs but complain by ffmpeg (use -march=$CPU), reverse effect when -march=i6400 - so omit it in CFLAG works for both
     CPU='i6400'
     HOST='mips64-linux'
     NDK_ARCH='mips64'
@@ -167,7 +158,6 @@ export CFLAGS="${CFLAGS}"
 export CPPFLAGS="${CFLAGS}"
 export CXXFLAGS="${CFLAGS} -std=c++11"
 export ASFLAGS="${ASFLAGS}"
-export LDFLAGS="-Wl,-rpath-link=${NDK_SYSROOT}/usr/lib -L${NDK_SYSROOT}/usr/lib ${LDFLAGS}"
 
 export CC="${CROSS_PREFIX}clang"
 export CXX="${CROSS_PREFIX}clang++"
@@ -184,7 +174,6 @@ export SIZE="${CROSS_PREFIX}size"
 export PKG_CONFIG="${CROSS_PREFIX}pkg-config"
 export PKG_CONFIG_LIBDIR=${PREFIX}/lib/pkgconfig
 export PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
-
 
 echo "use NDK=${NDK}"
 echo "use ANDROID_API=${ANDROID_API}"

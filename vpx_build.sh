@@ -14,8 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# export ANDROID_NDK="/opt/android/android-ndk-r15c" - last working is r15c without errors
-# r16b => Unable to invoke compiler: /opt/android/android-ndk-r16b/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc but build?
+# export ANDROID_NDK="/opt/android/android-ndk-r15c" - last working version without errors; but build failed for mips and mips64
+# r16b => Unable to invoke compiler: /opt/android/android-ndk-r16b/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc
+# --extra-cflags fix for ndk-r16b; however it still failed arm64-android-gcc build
 
 echo -e "\n\n** BUILD STARTED: vpx for ${1} **"
 . settings.sh $*
@@ -32,10 +33,11 @@ case $1 in
     TARGET="armv7-android-gcc"
   ;;
   arm64-v8a)
-    # vpx needs additional options not valid in ffmpeg
+    # vpx needs additional neon options but not valid in ffmpeg
     # valid arguments to '-mfpu=' are: crypto-neon-fp-armv8 fp-armv8 fpv4-sp-d16 neon neon-fp-armv8 neon-fp16 neon-vfpv4 vfp vfp3 vfpv3 vfpv3-d16 vfpv3-d16-fp16 vfpv3-fp16 vfpv3xd vfpv3xd-fp16 vfpv4 vfpv4-d16
     export CFLAGS="${CFLAGS} -mfloat-abi=softfp -mfpu=neon-vfpv4"
     TARGET="arm64-android-gcc"
+    #TARGET="armv8-linux-gcc"
   ;;
   x86)
     TARGET="x86-android-gcc"
@@ -52,10 +54,17 @@ case $1 in
 esac
 
   # --sdk-path=${TOOLCHAIN_PREFIX} must use ${NDK} actual path else cannot find CC for arm64-android-gcc
+  # ==> (Unable to invoke compiler: /arm-linux-androideabi-gcc)
   # https://bugs.chromium.org/p/webm/issues/detail?id=1476
-  # --extra-cflags fix for r16b; but essentially NOP for NDK below r16; however it failed arm64-android-gcc build
+
+  # Has configure error with Target=arm64-android-gcc which uses incorrect cc i.e. arm-linux-androideabi-gcc;
+
   # ./asm/sigcontext.h:39:3: error: unknown type name '__uint128_t'
-  # --as=yasm requires by x86 and x86-64 instead of clang
+  # GCC has builtin support for the types __int128, unsigned __int128, __int128_t and __uint128_t. Use them to define your own types:
+  # typedef __int128 int128_t;
+  # typedef unsigned __int128 uint128_t;
+
+  # need --as=yasm which is required by x86 and x86-64; cannot use define in settings.sh which uses clang
 
 ./configure \
   --sdk-path=${NDK} \
@@ -71,8 +80,10 @@ esac
   --disable-debug \
   --disable-unit-tests \
   --enable-realtime-only \
-  --extra-cflags="-isystem ${NDK}/sysroot/usr/include/${NDK_ABIARCH} -isystem ${NDK}/sysroot/usr/include" \
+  --enable-vp9-postproc --enable-vp9-highbitdepth \
   --disable-webm-io || exit 1
+
+#  --extra-cflags="-isystem ${NDK}/sysroot/usr/include/${NDK_ABIARCH} -isystem ${NDK}/sysroot/usr/include" \
 
 make -j${HOST_NUM_CORES} install || exit 1
 

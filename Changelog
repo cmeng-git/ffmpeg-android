@@ -1,12 +1,15 @@
 # Entries are sorted chronologically from oldest to youngest within each release,
 # releases are sorted from youngest to oldest.
 
+version 1.4 (2018/03/24):
+- move LDFLAGS to ffmpeg_build.sh - only requires for final ffmpeg linkage
+- libvpx still has configure error for Target=arm64-android-gcc
+
 version 1.3 (2018/03/21):
 - cleanup and add libvpx options to settings.sh
 - include libvpx build (ndk-r15c only and r16b has errors - see vpx_build.sh)
 - libvpx for arm64-v8a needs neon options, however libvpx.a not compatible with ffmpeg
 - remove -nostadlib option in LDFLAGS, lame check stdlib for linkage
-
 
 version 1.2 (2018/03/18):
 - update init_update_libs.sh to use lame-3.100 for aarch64 support; arm64-v8a libx.a has own undefined references
