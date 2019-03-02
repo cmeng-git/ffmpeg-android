@@ -21,7 +21,7 @@
 echo -e "\n\n** BUILD STARTED: vpx for ${1} **"
 . settings.sh $*
 
-pushd libvpx-1.7.0
+pushd libvpx-1.7.x
 make clean
 
 case $1 in
@@ -33,11 +33,11 @@ case $1 in
     TARGET="armv7-android-gcc"
   ;;
   arm64-v8a)
-    # vpx needs additional neon options but not valid in ffmpeg
-    # valid arguments to '-mfpu=' are: crypto-neon-fp-armv8 fp-armv8 fpv4-sp-d16 neon neon-fp-armv8 neon-fp16 neon-vfpv4 vfp vfp3 vfpv3 vfpv3-d16 vfpv3-d16-fp16 vfpv3-fp16 vfpv3xd vfpv3xd-fp16 vfpv4 vfpv4-d16
+    # ndk/vpx needs additional neon options in CFLAGS but not valid in ffmpeg
+    # valid arguments to '-mfpu=' are: crypto-neon-fp-armv8 fp-armv8 fpv4-sp-d16 neon neon-fp-armv8 neon-fp16 neon-vfpv4 vfp vfp3 vfpv3
+    # vfpv3-d16 vfpv3-d16-fp16 vfpv3-fp16 vfpv3xd vfpv3xd-fp16 vfpv4 vfpv4-d16
     export CFLAGS="${CFLAGS} -mfloat-abi=softfp -mfpu=neon-vfpv4"
     TARGET="arm64-android-gcc"
-    #TARGET="armv8-linux-gcc"
   ;;
   x86)
     TARGET="x86-android-gcc"
@@ -56,6 +56,9 @@ esac
   # --sdk-path=${TOOLCHAIN_PREFIX} must use ${NDK} actual path else cannot find CC for arm64-android-gcc
   # ==> (Unable to invoke compiler: /arm-linux-androideabi-gcc)
   # https://bugs.chromium.org/p/webm/issues/detail?id=1476
+  
+  # https://github.com/google/ExoPlayer/issues/3520 (VP9 builds failure with android-ndk-r16 #3520)
+  # https://github.com/android-ndk/ndk/issues/190#issuecomment-375164450 (unknown type name __uint128_t on ndk-build #190)
 
   # Has configure error with Target=arm64-android-gcc which uses incorrect cc i.e. arm-linux-androideabi-gcc;
 
@@ -65,25 +68,27 @@ esac
   # typedef unsigned __int128 uint128_t;
 
   # need --as=yasm which is required by x86 and x86-64; cannot use define in settings.sh which uses clang
+  # see https://github.com/webmproject/libvpx
+
+  # --extra-cflags="-isystem ${NDK}/sysroot/usr/include/${NDK_ABIARCH} -isystem ${NDK}/sysroot/usr/include" \
 
 ./configure \
   --sdk-path=${NDK} \
   --prefix=${PREFIX} \
   --target=${TARGET} \
   --as=yasm \
+  --enable-static \
   --disable-runtime-cpu-detect \
   --disable-docs \
-  --enable-static \
-  --disable-shared \
   --disable-examples \
   --disable-tools \
   --disable-debug \
   --disable-unit-tests \
   --enable-realtime-only \
+  --enable-vp8 --enable-vp9 \
   --enable-vp9-postproc --enable-vp9-highbitdepth \
+  --extra-cflags="-isystem ${NDK}/sysroot/usr/include/${NDK_ABIARCH} -isystem ${NDK}/sysroot/usr/include" \
   --disable-webm-io || exit 1
-
-#  --extra-cflags="-isystem ${NDK}/sysroot/usr/include/${NDK_ABIARCH} -isystem ${NDK}/sysroot/usr/include" \
 
 make -j${HOST_NUM_CORES} install || exit 1
 

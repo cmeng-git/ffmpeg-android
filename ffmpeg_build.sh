@@ -35,7 +35,7 @@ case $1 in
     LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
   ;;
   armeabi-v7a)
-    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now -Wl,--fix-cortex-a8" 
   ;;
   arm64-v8a)
     LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
@@ -78,12 +78,13 @@ for m in "$@"
 
 # do no set ld option and use as=gcc for clang
 TC_OPTIONS="--nm=${NM} --ar=${AR} --as=${CROSS_PREFIX}gcc --strip=${STRIP} --cc=${CC} --cxx=${CXX}"
+FFMPEG_PKG_CONFIG=${BASEDIR}/ffmpeg-pkg-config
 
 ./configure \
   --prefix=$PREFIX \
   --cross-prefix=$CROSS_PREFIX \
   --sysroot=$NDK_SYSROOT \
-  --target-os=linux \
+  --target-os=android \
   --arch=$NDK_ARCH \
   --cpu=$CPU \
   --enable-cross-compile \
@@ -91,16 +92,16 @@ TC_OPTIONS="--nm=${NM} --ar=${AR} --as=${CROSS_PREFIX}gcc --strip=${STRIP} --cc=
   --disable-debug \
   --disable-doc \
   --enable-static \
-  --disable-shared \
+  --enable-shared \
   --enable-pic \
   --disable-runtime-cpudetect \
-  --enable-pthreads \
   --enable-hardcoded-tables \
   $MODULES \
   --disable-programs \
   --disable-ffplay \
   --disable-ffprobe \
   --enable-x86asm \
+  --disable-asm \
   --extra-cflags="-I$PREFIX/include $CFLAGS" \
   --extra-ldflags="-L$PREFIX/lib $LDFLAGS" \
   --extra-cxxflags="$CXXFLAGS" \

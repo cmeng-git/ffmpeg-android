@@ -31,9 +31,10 @@ NDK_ABI_VERSION=4.9
 # Create custom ABIS or uncomment to build all supported abi for ffmpeg.
 # Do not change naming convention of the ABIS; see:
 # https://developer.android.com/ndk/guides/abis.html#Native code in app packages
-# Android recomended architecture support; others are deprecated
-# ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-ABIS=("armeabi" "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mips" "mips64")
+# ABIS=("armeabi" "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mips" "mips64")
+
+# Android recommended architecture support; others are deprecated
+ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 
 BASEDIR=`pwd`
 TOOLCHAIN_PREFIX=${BASEDIR}/toolchain-android
@@ -47,7 +48,7 @@ HOST_NUM_CORES=$(nproc)
 
 # https://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Optimize-Options.html
 # Note: vpx with ABIs x86 and x86_64 build has error with option -fstack-protector-all
-CFLAGS="-fpic -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -fno-strict-overflow -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
+CFLAGS="-fpic -fpie -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -fno-strict-overflow -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
 
 # Do not modify any of the NDK_ARCH, CPU and -march unless you are very sure.
 # The settings are used by <ARCH>-linux-android-gcc and submodule configure
@@ -63,7 +64,7 @@ case $1 in
     HOST='arm-linux'
     NDK_ARCH="arm"
     NDK_ABIARCH='arm-linux-androideabi'
-    CFLAGS="$CFLAGS -march=$CPU -marm"
+    CFLAGS="$CFLAGS -march=$CPU -mthumb"
     ASFLAGS=""
   ;;
   # https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/ARM-Options.html#ARM-Options
@@ -72,14 +73,23 @@ case $1 in
     HOST='arm-linux'
     NDK_ARCH='arm'
     NDK_ABIARCH='arm-linux-androideabi'
-    CFLAGS="$CFLAGS -march=$CPU -marm -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    CFLAGS="$CFLAGS -Wl,--fix-cortex-a8 -march=$CPU -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
     ASFLAGS=""
 
+    # 1. -march=$CPU flag targets the armv7 architecture.
+    # 2. -mfloat-abi=softfp enables hardware-FPU instructions while ensuring that the system passes floating-point
+    #  parameters in core registers, which is critical for ABI compatibility
+    # 3. -mfpu=neon setting forces the use of VFPv3-D32, per the ARM specification
+    # 4. -mthumb forces the generation of 16-bit Thumb-2 instructions (Thumb-1 for armeabi).
+    # If omitted, the toolchain will emit 32-bit ARM instructions.
+    # 5. -Wl,--fix-cortex-a8 is required as a workaround for a CPU bug in some Cortex-A8 implementation
+
     # arm v7vfpv3
-    # CFLAGS="$CFLAGS -march=$CPU -marm -mfloat-abi=softfp -mfpu=vfpv3-d16"
+    # CFLAGS="$CFLAGS -march=$CPU -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb"
 
     # arm v7 + neon (neon also include vfpv3-32)
-    # CFLAGS="$CFLAGS -march=$CPU -marm -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__" 
+    # CFLAGS="$CFLAGS -march=$CPU -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__" 
+
   ;;
   arm64-v8a)
     # Valid cpu = armv8-a cortex-a35, cortex-a53, cortec-a57 etc. but -march=armv8-a is required
@@ -140,7 +150,7 @@ esac
     --stl libc++ \
     --install-dir=${TOOLCHAIN_PREFIX}
 
-# old .sh replaced with .py
+# old .sh replaced with .py above
 # NDK_ABIARCH has changed, all applicable except x86 , x86_64
 #[ -d ${TOOLCHAIN_PREFIX} ] || $NDK/build/tools/make-standalone-toolchain.sh \
 #  --toolchain=${NDK_ABIARCH}-${NDK_ABI_VERSION} \
@@ -148,8 +158,9 @@ esac
 #  --install-dir=${TOOLCHAIN_PREFIX}
 
 NDK_SYSROOT=${TOOLCHAIN_PREFIX}/sysroot
-PREFIX=${BASEDIR}/build/ffmpeg/android/$1
-FFMPEG_PKG_CONFIG=${BASEDIR}/ffmpeg-pkg-config
+
+# Define the install directory of the libs and include files etc
+PREFIX=${BASEDIR}/android/$1
 
 # Add the standalone toolchain to the search path.
 export PATH=${TOOLCHAIN_PREFIX}/bin:$PATH
@@ -159,13 +170,13 @@ export CPPFLAGS="${CFLAGS}"
 export CXXFLAGS="${CFLAGS} -std=c++11"
 export ASFLAGS="${ASFLAGS}"
 
+export AR="${CROSS_PREFIX}ar"
+export AS="${CROSS_PREFIX}clang"
 export CC="${CROSS_PREFIX}clang"
 export CXX="${CROSS_PREFIX}clang++"
-export AS="${CROSS_PREFIX}clang"
-export AR="${CROSS_PREFIX}ar"
 export LD="${CROSS_PREFIX}ld"
-export RANLIB="${CROSS_PREFIX}ranlib"
 export STRIP="${CROSS_PREFIX}strip"
+export RANLIB="${CROSS_PREFIX}ranlib"
 export OBJDUMP="${CROSS_PREFIX}objdump"
 export CPP="${CROSS_PREFIX}cpp"
 export GCONV="${CROSS_PREFIX}gconv"

@@ -2,7 +2,13 @@
 . settings.sh
 
 # defined modules to be include in ffmpeg built
-MODULES=("vpx" "x264" "lame")
+# MODULES=("vpx" "x264" "lame")
+MODULES=("vpx" "x264")
+
+# Build only the specified module if given as second parameter
+if [[ $# -eq 2 ]]; then
+  MODULES=("$2")
+fi
 
 # Applying required patches
 echo -e "\n*** Applying patches... ***"

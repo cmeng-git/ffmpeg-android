@@ -1,28 +1,34 @@
 # Entries are sorted chronologically from oldest to youngest within each release,
 # releases are sorted from youngest to oldest.
 
-version 1.4 (2018/03/24):
+version 1.5.0 (2018/07/24):
+- clean up build scripts
+- Library ffmpeg use version 4.0.2
+- Library libvpx use version 1.7.x (master-20180727)
+
+
+version 1.4.0 (2018/03/24):
 - move LDFLAGS to ffmpeg_build.sh - only requires for final ffmpeg linkage
 - libvpx still has configure error for Target=arm64-android-gcc
 
-version 1.3 (2018/03/21):
+version 1.3.0 (2018/03/21):
 - cleanup and add libvpx options to settings.sh
 - include libvpx build (ndk-r15c only and r16b has errors - see vpx_build.sh)
 - libvpx for arm64-v8a needs neon options, however libvpx.a not compatible with ffmpeg
 - remove -nostadlib option in LDFLAGS, lame check stdlib for linkage
 
-version 1.2 (2018/03/18):
+version 1.2.0 (2018/03/18):
 - update init_update_libs.sh to use lame-3.100 for aarch64 support; arm64-v8a libx.a has own undefined references
 - change mips/mips64 cpu to use p5600/i6400 - ones that have been verified working
 - ABI mips64 : -march=mips64r6 accepts by clang50 but complain by ffmpeg
   -march=i6400 works for ffmpeg but complain by clang50; omit it in CFLAG - works for both
 
-version 1.1 (2018/03/14):
+version 1.1.0 (2018/03/14):
 - clean up settings.sh export parameters
 - default to use API-21 for 64bit build
 - use same PREFIX directory for all compiled sub-modules static libraries
 - change FFMPEG_PKG_CONFIG to point to PREFIX directory
 - apply patches for ffmpeg files (#undefine B0)
 
-version 1.0 (2018/03/11):
+version 1.0.0 (2018/03/11):
 - initial release
