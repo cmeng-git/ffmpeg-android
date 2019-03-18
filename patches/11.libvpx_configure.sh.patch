@@ -1,0 +1,50 @@
+--- /home/cmeng/source/libvpx/libvpx/build/make/configure.sh	2019-02-05 01:02:33.000000000
++++ /home/cmeng/workspace/ndk/ffmpeg-android/libvpx/build/make/configure.sh	2019-03-15 13:32:50.000000000
+@@ -1104,15 +1104,22 @@
+           disable_feature os_support
+           ;;
+ 
+         android*)
+           if [ -n "${sdk_path}" ]; then
+             SDK_PATH=${sdk_path}
+-            COMPILER_LOCATION=`find "${SDK_PATH}" \
+-              -name "arm-linux-androideabi-gcc*" -print -quit`
+-            TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/arm-linux-androideabi-
++            if [ ${tgt_isa} = "arm64" ] || [ ${tgt_isa} = "armv8" ]; then
++              COMPILER_LOCATION=`find "${SDK_PATH}" \
++                -name "aarch64-linux-android-gcc*" -print -quit`
++              TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/aarch64-linux-android-
++            else
++              COMPILER_LOCATION=`find "${SDK_PATH}" \
++                -name "arm-linux-androideabi-gcc*" -print -quit`
++              TOOLCHAIN_PATH=${COMPILER_LOCATION%/*}/arm-linux-androideabi-
++            fi
++
+             CC=${TOOLCHAIN_PATH}gcc
+             CXX=${TOOLCHAIN_PATH}g++
+             AR=${TOOLCHAIN_PATH}ar
+             LD=${TOOLCHAIN_PATH}gcc
+             AS=${TOOLCHAIN_PATH}as
+             STRIP=${TOOLCHAIN_PATH}strip
+@@ -1129,15 +1136,18 @@
+ 
+             if [ -d "${alt_libc}" ]; then
+               add_cflags "--sysroot=${alt_libc}"
+               add_ldflags "--sysroot=${alt_libc}"
+             fi
+ 
+-            # linker flag that routes around a CPU bug in some
+-            # Cortex-A8 implementations (NDK Dev Guide)
+-            add_ldflags "-Wl,--fix-cortex-a8"
++            if [ ${tgt_isa} = "armv7" ] || [ ${tgt_isa} = "armv7s" ]; then
++              # linker flag that routes around a CPU bug in some
++              # Cortex-A8 implementations (NDK Dev Guide)
++              # only valid for armv7 and clang/clang++ does not recognize this option
++              add_ldflags "-Wl,--fix-cortex-a8"
++            fi
+ 
+             enable_feature pic
+             soft_enable realtime_only
+             if [ ${tgt_isa} = "armv7" ]; then
+               soft_enable runtime_cpu_detect
+             fi

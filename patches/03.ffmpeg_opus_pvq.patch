@@ -1,5 +1,5 @@
 --- a/ffmpeg/libavcodec/opus_pvq.c
-+++ b/ffmpeg/libavcodec/opus_pvq.c 
++++ b/ffmpeg/libavcodec/opus_pvq.c
 @@ -22,13 +22,14 @@
   * License along with FFmpeg; if not, write to the Free Software
   * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA

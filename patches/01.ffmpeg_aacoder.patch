@@ -1,5 +1,5 @@
---- a/ffmpeg/libavcodec/aaccoder.c 
-+++ b/ffmpeg/libavcodec/aaccoder.c 
+--- a/ffmpeg/libavcodec/aaccoder.c
++++ b/ffmpeg/libavcodec/aaccoder.c
 @@ -58,12 +58,13 @@
  
  /* Parameter of f(x) = a*(100/lambda), defines how much PNS is allowed to

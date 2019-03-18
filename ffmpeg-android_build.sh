@@ -1,9 +1,8 @@
 #!/bin/bash
-. settings.sh
+. _settings.sh
 
-# defined modules to be include in ffmpeg built
-# MODULES=("vpx" "x264" "lame")
-MODULES=("vpx" "x264")
+# defined modules to be included in ffmpeg built
+MODULES=("vpx" "x264" "lame")
 
 # Build only the specified module if given as second parameter
 if [[ $# -eq 2 ]]; then
@@ -11,7 +10,7 @@ if [[ $# -eq 2 ]]; then
 fi
 
 # Applying required patches
-echo -e "\n*** Applying patches... ***"
+echo -e "\n*** Applying patches for libvpx, ffmpeg and lamb ***"
 . ffmpeg_android_patch.sh
 
 for ((i=0; i < ${#ABIS[@]}; i++))
@@ -22,25 +21,25 @@ for ((i=0; i < ${#ABIS[@]}; i++))
       rm -rf ${TOOLCHAIN_PREFIX}
 
       # $1 = architecture
-      # $2 = required for procced to start setup default compiler environment variables
+      # $2 = required for proceed to start setup default compiler environment variables
       for m in "${MODULES[@]}"
       do
         case $m in
           vpx)
-            ./vpx_build.sh "${ABIS[i]}" 1 || exit 1
+            ./_vpx_build.sh "${ABIS[i]}" $m || exit 1
           ;;
           x264)
-            ./x264_build.sh "${ABIS[i]}" 1 || exit 1
+            ./_x264_build.sh "${ABIS[i]}" $m || exit 1
           ;;
           png)
-            #./libpng_build.sh "${ABIS[i]}" 1 || exit 1
+            # ./_libpng_build.sh "${ABIS[i]}" $m || exit 1
           ;;
           lame)
-            ./lame_build.sh "${ABIS[i]}" 1 || exit 1
+            ./_lame_build.sh "${ABIS[i]}" $m || exit 1
           ;;
         esac
       done
-      ./ffmpeg_build.sh "${ABIS[i]}" "${MODULES[@]}" 1 || exit 1
+      ./_ffmpeg_build.sh "${ABIS[i]}" 'ffmpeg' "${MODULES[@]}" || exit 1
     fi
   done
 

@@ -1,8 +1,8 @@
-build/ffmpeg/android/*/share
-build/ffmpeg/android/*/bin
+jni/lame/android/*/share
+jni/lame/android/*/bin
 toolchain-*
-libpng-*
-lame-*
+libpng
+lame
 x264
 ffmpeg
 
