@@ -1,5 +1,5 @@
---- /home/cmeng/tmp/ffmpeg-4.1.1/libavdevice/v4l2.c	2019-02-10 04:56:02.000000000 
-+++ /home/cmeng/workspace/ndk/ffmpeg-android/ffmpeg/libavdevice/v4l2.c	2019-03-18 10:25:49.000000000 
+--- a/ffmpeg/libavdevice/v4l2.c	2019-02-10 04:56:02.000000000
++++ b/ffmpeg/libavdevice/v4l2.c	2019-03-18 10:25:49.000000000
 @@ -129,13 +129,13 @@
          SET_WRAPPERS(v4l2_);
  #else

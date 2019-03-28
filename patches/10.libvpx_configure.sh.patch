@@ -1,6 +1,6 @@
---- /home/cmeng/source/libvpx/libvpx/build/make/configure.sh	2019-02-05 01:02:33.000000000
-+++ /home/cmeng/workspace/ndk/ffmpeg-android/libvpx/build/make/configure.sh	2019-03-15 13:32:50.000000000
-@@ -1104,15 +1104,22 @@
+--- a/libvpx/build/make/configure.sh	2019-02-05 01:02:33.000000000
++++ b/libvpx/build/make/configure.sh	2019-03-19 17:28:21.000000000
+@@ -1104,40 +1104,59 @@
            disable_feature os_support
            ;;
  
@@ -26,7 +26,31 @@
              LD=${TOOLCHAIN_PATH}gcc
              AS=${TOOLCHAIN_PATH}as
              STRIP=${TOOLCHAIN_PATH}strip
-@@ -1129,15 +1136,18 @@
+             NM=${TOOLCHAIN_PATH}nm
+ 
+             if [ -z "${alt_libc}" ]; then
+-              alt_libc=`find "${SDK_PATH}" -name arch-arm -print | \
+-                awk '{n = split($0,a,"/"); \
+-                split(a[n-1],b,"-"); \
+-                print $0 " " b[2]}' | \
+-                sort -g -k 2 | \
+-                awk '{ print $1 }' | tail -1`
++              if [ ${tgt_isa} = "armv7" ]; then
++                alt_libc=`find "${SDK_PATH}" -name arch-arm -print | \
++                  awk '{n = split($0,a,"/"); \
++                  split(a[n-1],b,"-"); \
++                  print $0 " " b[2]}' | \
++                  sort -g -k 2 | \
++                  awk '{ print $1 }' | tail -1`
++			  else
++                alt_libc=`find "${SDK_PATH}" -name arch-${tgt_isa} -print | \
++                  awk '{n = split($0,a,"/"); \
++                  split(a[n-1],b,"-"); \
++                  print $0 " " b[2]}' | \
++                  sort -g -k 2 | \
++                  awk '{ print $1 }' | tail -1`
++			  fi
+             fi
  
              if [ -d "${alt_libc}" ]; then
                add_cflags "--sysroot=${alt_libc}"

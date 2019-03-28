@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# aTalk v1.7.3 is only compatible with the following module versions:
+# a. ffmpeg v1.0.10
+# b. libvpx-1.6.1+ (master-20171013.tar.gz) see vpx-android for detail
+# c. x264 - not required, use android h264 instead
+
 echo -e "\n================= Updating submodules ==========================="
 git submodule update --init
 

@@ -11,32 +11,35 @@
 * mips*
 * mips64*
 
-Note: *-Deprecated in android NDK r16. Will be removed in r17.<br/>
+Note: *-Deprecated in android ndk-r16. Will be removed in ndk-r17.<br/>
 see https://developer.android.com/ndk/guides/abis.html#Supported ABIs <br/>
-Future ffmpeg-andorid releases > v1.5.0 will not verify against these obsoleted ABI's
+ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+
 
 ## Instructions
-* Set environment ANDROID_NDK variable e.g. /opt/android/android-ndk-r17c (recommended);<br/>
-  Other ndk releases may not work with all modules and for all abis
-  1. export ANDROID_NDK={Android NDK Base Path}
-* If necessary, fetch and update submodules and libraries (before build); using ./init_update_libs.sh command
-  1. edit the ./init_update_libs.sh files for your desired module version
-  2. ./init_update_libs.sh
-  3. For each sub-module, cd to the respective directory and execute ./configure without option;<br/>
+* Set environment ANDROID_NDK variable; not all ndk releases work with all modules/ABIS
+  - export ANDROID_NDK={Android NDK Base Path}<br/>
+     e.g. export ANDROID_NDK=/opt/android/android-ndk-r17c (recommended);
+* If necessary, fetch and update all libraries source (before build);
+  - review and edit ./init_update_libs.sh file for your desired modules' versions
+  - ./init_update_libs.sh
+  - The default working sub-directories are ffmpeg, lame, libvpx, x264
+  - For each sub-module, cd to the respective directory and execute ./configure without option;<br/>
      The configure process may list any missing sdk build tools, please install before continue
-  4. Note: The final configure with options for each submodule is done in each submodule _\<module>_build.sh script 
-* Edit ./ffmpeg-android_build.sh [#1] and ./_settings.sh [#2]<br/>
-  to remove any of the codec sub-modules or architectures you wish to be excluded from the build
-  1. MODULES=("vpx" "x264" "lame") [#1]
-  2. ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64") [#2]
-* To support 64-bit libraries built, change _settings.sh#ANDROID_API=21 (min API for 64-bit library build).<br/>
+  - The final configure with options for each submodule is done in each submodule _\<module>_build.sh build script 
+* Edit ./ffmpeg-android_build.sh [#1] and ./_settings.sh [#2];<br/>
+  a. remove any of the codec sub-modules or architectures you wish to be excluded from the build<br/>
+  b. add "ffmpeg" to [#1] if you want to build standalone ffmpeg without inclusion of the sub-modules integration<br/>
+  c. the default values are defined as:
+  - MODULES=("vpx" "x264" "lame") [#1]
+  - ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64") [#2]
+* To support 64-bit libraries built, ensure _settings.sh#ANDROID_API=21 (min API for 64-bit library build).<br/>
   Note: application.mk in Android Studio i.e. APP_PLATFORM := android-21 i.e. both must use the same API
 * Enter either one of the following commands to compile ffmpeg for all or one the supported ABI's etc
-  1. ./ffmpeg-android_build.sh
-  2. ./ffmpeg-android_build.sh armeabi-v7a (i.e. selected cpu with all predefined codec modules)
-  3. ./ffmpeg-android_build.sh armeabi-v7a x264 (i.e. selected cpu with only x264 codec module)
-  4. As #1 but create custom _settings.sh#ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64") for your project
-* All the generated static libraries and includes files are in ./jni/\<MODULE>/android/\<ABI> sub-directories.
+  - ./ffmpeg-android_build.sh [#1]
+  - ./ffmpeg-android_build.sh armeabi-v7a (i.e. selected cpu with all predefined codec modules)
+  - ./ffmpeg-android_build.sh armeabi-v7a x264 (i.e. selected cpu with only x264 codec module)
+* All the generated static libraries and includes files are installed in ./jni/\<MODULE>/android/\<ABI>.
 
 ## Linking with versioned shared library in Android NDK
 * Note: the latest _vpx_build.sh has included the scripts to patch the following automatically. Manual change is not further required.<br/><br/>
@@ -49,48 +52,49 @@ Future ffmpeg-andorid releases > v1.5.0 will not verify against these obsoleted 
 
 
 ## Verification Status
-* x264 (v157):
-  - ndk-r18b, ndk-r17c (build all; ffmpeg ld cannot find libvpx (arm64-v8a) due to libx.a error has own undefined references e.g. x264_8_... x264_10...)
-  - ndk-r16b (clang udp.c compiler error when build for armeabi-v7a): <br/>
-    libavformat/udp.c:290:28: error: member reference base type '__be32' (aka 'unsigned int') is not a structure or union<br/>
-        mreqs.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
+* The scripts has been verified working with the following configurations:
+  - ABIS: armeabi-v7a, arm64-v8a, x86, x86_64
+  - MODULES (with applied patches): ffmpeg-v4.1.1, libvpx-v1.8.0, x264-v157, lame-v3.100  
+  - NDK version: ndk-r17c
+  - ANDROID_API: 21
+
+* x264 (v157 and v152):
+  - x264 option: --disable-asm<br/>
+    Must exclude the option for arm64. Used by configure, config.mak and Makefile to define AS and to compile required *.S assembly files.<br/>
+    Otherwise will have undefined references e.g. x264_8_... x264_10...<br/>
+    However must include the option for x86 and x86_64; otherwise have relocate text, requires dynamic R_X86_64_PC32 etc when use in aTalk
+  - ndk-r18b, ndk-r17c, ndk-16b, ndk-r15c (build all)
 
 * libvpx (v.1.8.0):
-  - Note: libvpx configure needs patch to correctly use the abi for arm64 with SDK toolchains. 
-  
+  - libvpx configure.sh needs patches to correctly build the arm64 with SDK toolchains. 
   - When --sdk-path is specified, libvpx configure uses SDK toolchains compiler (gcc/g++);
     * ndk-r17c, ndk-r16b:<br/>
       To avoid missing stdlib.h and other errors, need to include the following two options for SDK toolchains:<br/>
       --extra-cflags="-isystem ${NDK}/sysroot/usr/include/${NDK_ABIARCH} -isystem ${NDK}/sysroot/usr/include"<br/>
-      --libc=${NDK_SYSROOT} => use standalone toolchains directory. libvpx configure.sh has problem configure this with SDK properly<br/><br/>
-    * ndk-r18b:<br/>
+      --libc=${NDK_SYSROOT} => use standalone toolchains directory. libvpx configure.sh has problem configure this with SDK properly
+    * ndk-r18b: gcc option has been removed<br/>
      build failed with: /home/cmeng/workspace/ndk/ffmpeg-android/toolchain-android/bin/aarch64-linux-android-ld: cannot find -lgcc
-  
-  - When using standalone toolchain, i.e. (omit --sdk-path and --extra-cflags options);
+  - When using standalone toolchains, i.e. (omit --sdk-path);
     * ndk-r18b, ndk-r17c, ndk-r16b: <br/>
     Build ok with ABIS=("arm64-v8a" "x86" "x86_64") but not "armeabi-v7a" and failed with:<br/>
     /tmp/vpx-conf-4350-25363.o(.ARM.exidx.text.main+0x0): error: undefined reference to '__aeabi_unwind_cpp_pr0' 
 
-  - However in either case (SDK or Standalone toolchains), libvpx failed for inclusion during ffmpeg build i.e.:<br/>
-    test.c:(.text.main+0x8): undefined reference to `closesocket', 'gethrtime', 'sysctl', 'cabs', 'cexp' <br/>
-
-* lame (v3.1000_:
-  - ndk-r16b, ndk-r15c (build all, but failed to build with ffmpeg 4.1.1)
+* lame (v3.1000):
   - ndk-r17b - build all and can integrate with ffmpeg
+  - ndk-r16b, ndk-r15c (build all)
   - ndk-r18b - failed
+  - PREFIX must use absolution path
 
 * ffmpeg (v4.1.1):
+  - Must include option --disable-asm for x86, otherwise <br/>
+    libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available
   - ndk-r18b, ndk-r17c => give error on: (fixed by patch)<br/>
     libavdevice/v4l2.c:135:9: error: assigning to 'int (*)(int, unsigned long, ...)' from incompatible type '<overloaded function type>'
         SET_WRAPPERS();
-  - ndk-r16b => gives error on: <br/>
+  - ndk-r16b or lower => gives error on:<br/>
     libavformat/udp.c:290:28: error: member reference base type '__be32' (aka 'unsigned int') is not a structure or union<br/>
         mreqs.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
-
-  - ndk-r18b, ndk-r17c, ndk-r16b (ffmpeg complains cannot find libvpx for arm64-v8a)<br/>
-    arm64-v8a/lib/libx264.so: undefined reference to 'x264_8_...' 'x264_8_...' <br/>
-    test.c:(.text.main+0x8): undefined reference to 'closesocket', 'gethrtime', 'sysctl', 'cabs', 'cexp'
-
+  
 * Note:
   - NDK verification status (build with clang/clang++ and API-21 unless otherwise specified):
   - Recommendation: use ndk-r17c and API-21 unless you have other considerations.
@@ -100,21 +104,19 @@ Future ffmpeg-andorid releases > v1.5.0 will not verify against these obsoleted 
 
 ## Help:
 * Set up Linux/Ubuntu development environment with the below build tools
-  * sudo apt-get --quiet --yes install build-essential git autoconf libtool pkg-config gperf gettext yasm python-lxml
+  - sudo apt-get --quiet --yes install build-essential git autoconf libtool pkg-config gperf gettext yasm python-lxml
 * Patches for Sub-module
-  * ./ffmpeg-android_build.sh includes the patches for the sub-modules 
-  * ffmpeg-android_patch.sh applies patches to the relevant sub-module with patch files from ./pathes directory
-  * edit these files to include additional patches if required.
+  - ./ffmpeg-android_build.sh includes the patches for the sub-modules 
+  - ffmpeg-android_patch.sh applies patches to the relevant sub-module with patch files from ./pathes directory
+  - edit these files to include additional patches if required.
 * Configuration failed
-  * You may encounter this problem during the codec sub-module build, navigate to the respective sub-module directory:
-    * Issue the command line i.e. configure --help to check for the available options 
-    * Refer to config.log of the sub-module for more info.
-    * Refer to the configure file for more information on CPU types supported
-    * Edit the script file to make the necessary modifications based on help and errors found in config.log
-* During sub-module built, you may encountered compilation or linker errors, changing ndk version may help resolve the issues.
-  However it may create new problems in another areas. Both R15c and r16b failed to compile ffmpeg 4.1.1 <br/>
-  with error: member reference base type '__be32' (aka 'unsigned int') is not a structure or union. <br/>
-  Finally r17b is the only ndk release that is able to compile all sub-modules i.e. libx264 v157, libvxp v1.8, ffmpeg v4.1.1; <br/>
+  - You may encounter this problem during the codec sub-module build, navigate to the respective sub-module directory:
+    - Issue the command line i.e. configure --help to check for the available options 
+    - Refer to config.log of the sub-module for more info.
+    - Refer to the configure file for more information on CPU types supported
+    - Edit the script file to make the necessary modifications based on help and errors found in config.log
+* During sub-module built, you may encountered compilation or linker errors, changing ndk version may help resolve the issues.<br/>
+  However it may create new problems in another areas.
   
 * Utilize Modern Compiler Flags to Address Potential Security Issues
   - Stack execution protection:                    LDFLAGS="-z noexecstack" 
@@ -126,9 +128,6 @@ Future ffmpeg-andorid releases > v1.5.0 will not verify against these obsoleted 
   - Format string vulnerabilities:                 CFLAGS="-Wformat -Wformat-security"
    
 ## Note:
-* x264.a generated for arm64-v8a has undefined references to its own *.o files e.g. x264_8_... x264_10... when linking <br/>
-with ffmpeg. It seems to be an x264 configure file problem.
-
 * The scripts in this folder are not compatible with Unified Headers:<br/>
 See https://android.googlesource.com/platform/ndk/+/master/docs/UnifiedHeaders.md#supporting-unified-headers-in-your-build-system
 
@@ -146,6 +145,8 @@ Please refer to the following sites which may offer solution for problems you ma
 * https://github.com/android-ndk/ndk/issues/477 (mmap causes compile errors on r15c (unknown identifier) #477)
 * https://github.com/android-ndk/ndk/issues/503 (implicit declaration of function 'mmap' #503)
 * https://github.com/nodejs/node/issues/18671 (Utilize Modern Compiler Flags to Address Potential Security Issues #18671)
+* https://android.googlesource.com/platform/external/libvpx/+/ca30a60d2d6fbab4ac07c63bfbf7bbbd1fe6a583 (Add visibility="protected" attribute for global variables referenced in asm files.)
+
 
 ## License
 

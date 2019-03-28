@@ -25,8 +25,8 @@ fi
 set -u
 
 # Never mix two api level to build static library for use on the same apk.
-# Set to API:15 for aTalk minimun support for platform API-15
-# Does not build 64-bit arch if ANDROID_API is less than 21 - the minimum supported API level for 64-bit.
+# Set to API:21 for aTalk 64-bit architecture support
+# Does not build 64-bit arch if ANDROID_API is less than 21 i.e. the minimum supported API level for 64-bit.
 ANDROID_API=21
 NDK_ABI_VERSION=4.9
 
@@ -38,12 +38,13 @@ NDK_ABI_VERSION=4.9
 
 # Android recommended architecture support; others are deprecated
 ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+# ABIS=("x86" "x86_64")
 
 BASEDIR=`pwd`
 TOOLCHAIN_PREFIX=${BASEDIR}/toolchain-android
 
 #===========================================
-# Do not proceed on first call without the required 2 parameters
+# Do not proceed further on first call without the required 2 parameters
 [[ $# -lt 2 ]] && return
 
 NDK=${ANDROID_NDK}
@@ -52,13 +53,14 @@ HOST_NUM_CORES=$(nproc)
 # https://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Optimize-Options.html
 # Note: vpx with ABIs x86 and x86_64 build has error with option -fstack-protector-all
 CFLAGS="-fpic -fpie -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -fno-strict-overflow -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
-LDFLAGS=""
+# Enable report-all for earlier detection of errors instead at later stage
+LDFLAGS="-Wl,-z,defs -Wl,--unresolved-symbols=report-all"
 
 # Do not modify any of the NDK_ARCH, CPU and -march unless you are very sure.
 # The settings are used by <ARCH>-linux-android-gcc and submodule configure
 # https://en.wikipedia.org/wiki/List_of_ARM_microarchitectures
-# $NDK/toolchains/llvm/prebuilt/...../includellvm/ARMTargetParser.def etc
-# ARCH - should be one from $ANDROID_NDK/platforms/android-$API/arch-* [arm / arm64 / mips / mips64 / x86 / x86_64]"
+# ${NDK}/toolchains/llvm/prebuilt/...../include llvm/ARMTargetParser.def etc
+# NDK-ARCH - should be one from $ANDROID_NDK/platforms/android-$API/arch-* [arm / arm64 / mips / mips64 / x86 / x86_64]"
 # https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html
 
 case $1 in
@@ -68,7 +70,7 @@ case $1 in
     HOST='arm-linux'
     NDK_ARCH="arm"
     NDK_ABIARCH='arm-linux-androideabi'
-    CFLAGS="$CFLAGS -march=$CPU -mthumb"
+    CFLAGS="${CFLAGS} -march=${CPU} -mthumb -finline-limit=64"
     ASFLAGS=""
   ;;
   # https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/ARM-Options.html#ARM-Options
@@ -78,36 +80,38 @@ case $1 in
     NDK_ARCH='arm'
     NDK_ABIARCH='arm-linux-androideabi'
     # clang70: warning: -Wl,--fix-cortex-a8: 'linker' input unused [-Wunused-command-line-argument]
-    # CFLAGS="$CFLAGS -Wl,--fix-cortex-a8 -march=$CPU -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
-    CFLAGS="$CFLAGS -march=$CPU -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    # CFLAGS="${CFLAGS} -Wl,--fix-cortex-a8 -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    CFLAGS="${CFLAGS} -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    LDFLAGS="${LDFLAGS} -march=${CPU}"
     ASFLAGS=""
 
-    # 1. -march=$CPU flag targets the armv7 architecture.
-    # 2. -mfloat-abi=softfp enables hardware-FPU instructions while ensuring that the system passes floating-point
-    #     parameters in core registers, which is critical for ABI compatibility
-    # 3. -mfpu=neon setting forces the use of VFPv3-D32, per the ARM specification
+    # 1. -march=${CPU} flag targets the armv7 architecture.
+    # 2. -mfloat-abi=softfp enables hardware-FPU instructions while ensuring that the system passes
+    #     floating-point parameters in core registers, which is critical for ABI compatibility
+    # 3. -mfpu=neon setting forces the use of VFPv3-D32, per the ARM specifications
     # 4. -mthumb forces the generation of 16-bit Thumb-2 instructions (Thumb-1 for armeabi).
-    #    If omitted, the toolchain will emit 32-bit ARM instructions.
-    # 5. -Wl,--fix-cortex-a8 is required as a workaround for a CPU bug in some Cortex-A8 implementation (x264 flags as warning)
-    #    Standalone toolchains does not accept this option. SDK toolchains (gcc/cg++) is ok.
+    #     If omitted, the toolchain will emit 32-bit ARM instructions.
+    # 5. -Wl,--fix-cortex-a8 is required as a workaround for a CPU bug in some Cortex-A8 implementation
+    #     (x264 flags as warning) Standalone toolchains does not accept this option. SDK toolchains (gcc/cg++) is ok.
     #    /home/cmeng/workspace/ndk/ffmpeg-android/toolchain-android/bin/arm-linux-androideabi-ld: -Wl,--fix-cortex-a8: unknown option
     # LDFLAGS="-Wl,--fix-cortex-a8"
 
     # arm v7vfpv3
-    # CFLAGS="$CFLAGS -march=$CPU -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb"
+    # CFLAGS="${CFLAGS} -march=${CPU} -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb"
 
     # arm v7 + neon (neon also include vfpv3-32)
-    # CFLAGS="$CFLAGS -march=$CPU -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__" 
+    # CFLAGS="${CFLAGS} -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
   ;;
   arm64-v8a)
     # Valid cpu = armv8-a cortex-a35, cortex-a53, cortec-a57 etc. but -march=armv8-a is required
-    # x264 build has own undefined references e.g. x264_8_pixel_sad_16x16_neon - show up when build with ffmpeg
-    # -march valid only for ‘armv8-a’, ‘armv8.1-a’, ‘armv8.2-a’, ‘armv8.3-a’ or ‘armv8.4-a’ or native (only armv8-a is valid for lame build).
+    # -march valid only for ‘armv8-a’, ‘armv8.1-a’, ‘armv8.2-a’, ‘armv8.3-a’ or ‘armv8.4-a’
+    #  or native (only armv8-a is valid for lame build).
     CPU='cortex-a57'
     HOST='aarch64-linux'
     NDK_ARCH='arm64'
     NDK_ABIARCH='aarch64-linux-android'
-    CFLAGS="$CFLAGS -march=armv8-a"
+    CFLAGS="${CFLAGS} -march=armv8-a"
+    LDFLAGS="${LDFLAGS} -march=armv8-a"
     ASFLAGS=""
   ;;
   x86)
@@ -115,7 +119,8 @@ case $1 in
     HOST='i686-linux'
     NDK_ARCH='x86'
     NDK_ABIARCH='i686-linux-android'
-    CFLAGS="$CFLAGS -O2 -march=$CPU -mtune=intel -msse3 -mfpmath=sse -m32"
+    CFLAGS="${CFLAGS} -O2 -march=${CPU} -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
+    LDFLAGS="-m32"
     ASFLAGS="-D__ANDROID__"
   ;;
   x86_64)
@@ -123,7 +128,8 @@ case $1 in
     HOST='x86_64-linux'
     NDK_ARCH='x86_64'
     NDK_ABIARCH='x86_64-linux-android'
-    CFLAGS="$CFLAGS -O2 -march=$CPU -mtune=intel -msse4.2 -mpopcnt -m64"
+    CFLAGS="${CFLAGS} -O2 -march=${CPU} -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
+    LDFLAGS=""
     ASFLAGS="-D__ANDROID__"
   ;;
 
@@ -136,27 +142,25 @@ case $1 in
     HOST='mips-linux'
     NDK_ARCH='mips'
     NDK_ABIARCH="mipsel-linux-android"
-    CFLAGS="$CFLAGS -EL -march=$CPU -mhard-float"
+    CFLAGS="${CFLAGS} -EL -march=${CPU} -mhard-float"
     ASFLAGS=""
   ;;
   mips64)
-    # -march=mips64r6 works for clangs but complain by ffmpeg (use -march=$CPU), reverse effect when -march=i6400 - so omit it in CFLAG works for both
+    # -march=mips64r6 works for clangs but complain by ffmpeg (use -march=${CPU}), reverse effect when -march=i6400 - so omit it in CFLAG works for both
     CPU='i6400'
     HOST='mips64-linux'
     NDK_ARCH='mips64'
     NDK_ABIARCH='mips64el-linux-android'
-    CFLAGS="$CFLAGS -EL -mfp64 -mhard-float"
+    CFLAGS="${CFLAGS} -EL -mfp64 -mhard-float"
     ASFLAGS=""
   ;;
 esac
 
-# old .sh script has been replaced with .py below
-# Version r19b => Instead use:
-#    $ $NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ src.cpp
-
-# cmeng: must ensure AS JNI uses the same STL library or "system" if specified
 # Create standalone toolchains for the specified architecture - use .py instead of the old .sh
-  [ -d ${TOOLCHAIN_PREFIX} ] || python $NDK/build/tools/make_standalone_toolchain.py \
+# However for ndk--r19b => Instead use:
+#    $ ${NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ src.cpp
+# cmeng: must ensure AS JNI uses the same STL library or "system" if specified
+  [ -d ${TOOLCHAIN_PREFIX} ] || python ${NDK}/build/tools/make_standalone_toolchain.py \
     --arch ${NDK_ARCH} \
     --api ${ANDROID_API} \
     --stl libc++ \
@@ -166,8 +170,8 @@ NDK_SYSROOT=${TOOLCHAIN_PREFIX}/sysroot
 
 # Define the install directory of the libs and include files etc
 # lame needs absolute path
-PREFIX=${BASEDIR}/jni/$2/android/$1
 # PREFIX=../jni/$2/android/$1
+PREFIX=${BASEDIR}/jni/$2/android/$1
 
 # Add the standalone toolchain to the search path.
 export PATH=${TOOLCHAIN_PREFIX}/bin:$PATH
@@ -194,7 +198,7 @@ export PKG_CONFIG="${CROSS_PREFIX}pkg-config"
 export PKG_CONFIG_LIBDIR=${PREFIX}/lib/pkgconfig
 export PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 
-echo "use NDK=${NDK}"
-echo "use ANDROID_API=${ANDROID_API}"
-echo "PREFIX=${PREFIX}"
+echo "### Use NDK=${NDK}"
+echo "### Use ANDROID_API=${ANDROID_API}"
+echo "### Install directory: PREFIX=${PREFIX}"
 

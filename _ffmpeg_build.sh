@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# set -x
 
 # https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/Link-Options.html#Link-Options
 # Data relocation and protection (RELRO): LDLFAGS="-z relro -z now"
@@ -23,36 +24,36 @@
 # -fuse-ld=gold: use ld.gold linker but unavailable for ABI mips and mips64
 LDFLAGS='-pie -lc -lm -ldl -llog'
 
-echo -e "\n\n** BUILD STARTED: ffmpeg for ${1} **"
 . _settings.sh $*
 
 pushd ffmpeg
-make clean
+VERSION=$(./ffbuild/version.sh .)
+echo -e "\n\n** BUILD STARTED: ffmpeg-v${VERSION} for ${1} **"
 
 case $1 in
   armeabi)
-    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+    LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now"
   ;;
   armeabi-v7a)
-    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now -Wl,--fix-cortex-a8" 
+    LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now -Wl,--fix-cortex-a8"
   ;;
   arm64-v8a)
-    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+    #  -Wl,--unresolved-symbols=ignore-in-shared-libs fixes x264 undefined references for arm64-v8a
+    LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now  -Wl,--unresolved-symbols=ignore-in-shared-libs"
   ;;
   x86)
-    LDFLAGS="$LDFLAGS" 
+    LDFLAGS="${LDFLAGS}"
   ;;
   x86_64)
-    LDFLAGS="$LDFLAGS" 
+    LDFLAGS="${LDFLAGS}"
   ;;
   mips)
-    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+    LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now"
   ;;
   mips64)
-    LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now" 
+    LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now"
   ;;
 esac
-
 # export LDFLAGS="-Wl,-rpath-link=${NDK_SYSROOT}/usr/lib -L${NDK_SYSROOT}/usr/lib ${LDFLAGS}"
 
 INCLUDES=""
@@ -67,74 +68,90 @@ for m in "$@"
 
     case $m in
       x264)
-        INCLUDES="$INCLUDES -I$PREFIX_/include/$m"
-        LIBS="$LIBS -L$PREFIX_/lib"
-        cp -r $PREFIX_/lib/pkgconfig ${PREFIX}/lib
-        MODULES="$MODULES --enable-libx264 --enable-gpl --enable-version3"
+        INCLUDES="${INCLUDES} -I${PREFIX_}/include/$m"
+        LIBS="${LIBS} -L${PREFIX_}/lib"
+        cp -r ${PREFIX_}/lib/pkgconfig ${PREFIX}/lib
+        MODULES="${MODULES} --enable-libx264 --enable-version3"
       ;;
       vpx)
-        INCLUDES="$INCLUDES -I$PREFIX_/include"
-        LIBS="$LIBS -L$PREFIX_/lib"
-        cp -r $PREFIX_/lib/pkgconfig ${PREFIX}/lib
-        MODULES="$MODULES --enable-libvpx"
+        INCLUDES="${INCLUDES} -I${PREFIX_}/include"
+        LIBS="${LIBS} -L${PREFIX_}/lib"
+        cp -r ${PREFIX_}/lib/pkgconfig ${PREFIX}/lib
+        MODULES="${MODULES} --enable-libvpx"
       ;;
       png)
-        INCLUDES="$INCLUDES -I$PREFIX_/include"
-        LIBS="$LIBS -L$PREFIX_/lib"
-        cp -r $PREFIX_/lib/pkgconfig ${PREFIX}/lib
-        MODULES="$MODULES --enable-libpng"
+        INCLUDES="${INCLUDES} -I${PREFIX_}/include"
+        LIBS="${LIBS} -L${PREFIX_}/lib"
+        cp -r ${PREFIX_}/lib/pkgconfig ${PREFIX}/lib
+        MODULES="${MODULES} --enable-libpng"
       ;;
       lame)
-        INCLUDES="$INCLUDES -I$PREFIX_/include"
-        LIBS="$LIBS -L$PREFIX_/lib"
-        # cp -r $PREFIX_/lib/pkgconfig ${PREFIX}/lib/pkgconfig
-        MODULES="$MODULES --enable-libmp3lame"
+        INCLUDES="${INCLUDES} -I${PREFIX_}/include"
+        LIBS="${LIBS} -L${PREFIX_}/lib"
+        # cp -r ${PREFIX_}/lib/pkgconfig ${PREFIX}/lib/pkgconfig
+        MODULES="${MODULES} --enable-libmp3lame"
       ;;
     esac
  done
 
 
 # libvpx does not support the build of share library
+#
+# --enable-gpl required for libpostproc build
+# --disable-postproc: https://trac.ffmpeg.org/wiki/Postprocessing
+# Anyway, most of the time it won't help to postprocess h.264, HEVC, VP8, or VP9 video.
 
 # do no set ld option and use as=gcc for clang
 TC_OPTIONS="--nm=${NM} --ar=${AR} --as=${CROSS_PREFIX}gcc --strip=${STRIP} --cc=${CC} --cxx=${CXX}"
-CODEC_DISABLED='--disable-alsa --disable-appkit --disable-avfoundation --disable-libv4l2 --disable-audiotoolbox'
+# Below option not valid for ffmpeg-v1.0.10 (aTalk)
+# CODEC_DISABLED='--disable-alsa --disable-appkit --disable-avfoundation --disable-libv4l2 --disable-audiotoolbox'
+# --disable-programs   --enable-x86asm \
 
 FFMPEG_PKG_CONFIG=${BASEDIR}/ffmpeg-pkg-config
 # FFMPEG_PKG_CONFIG=../ffmpeg-pkg-config
 # PREFIX="../jni/ffmpeg/android/$1"
+#  --disable-ffserver \ # valid for ffmpeg-1.0.10 only
 
+#  Must include option --disable-asm for x86, otherwise
+# libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available
+DISASM=""
+if [[ $1 =~ x86.* ]]; then
+   DISASM="--disable-asm"
+fi
+
+make clean
 ./configure \
-  --prefix=$PREFIX \
-  --cross-prefix=$CROSS_PREFIX \
-  --sysroot=$NDK_SYSROOT \
+  --prefix=${PREFIX} \
+  --cross-prefix=${CROSS_PREFIX} \
+  --sysroot=${NDK_SYSROOT} \
   --target-os=android \
-  --arch=$NDK_ARCH \
-  --cpu=$CPU \
+  --arch=${NDK_ARCH} \
+  --cpu=${CPU} \
+  ${DISASM} \
+  ${TC_OPTIONS} \
   --enable-cross-compile \
-  $TC_OPTIONS \
-  --disable-debug \
-  --disable-doc \
-  --disable-shared \
   --enable-static \
+  --disable-shared \
   --enable-pic \
+  --disable-doc \
+  --disable-debug \
   --disable-runtime-cpudetect \
   --disable-pthreads \
   --enable-hardcoded-tables \
-  $CODEC_DISABLED \
-  $MODULES \
+  ${MODULES} \
+  --enable-gpl \
+  --disable-postproc \
   --disable-programs \
+  --disable-ffmpeg \
   --disable-ffplay \
   --disable-ffprobe \
-  --enable-x86asm \
-  --disable-asm \
-  --extra-cflags="$INCLUDES $CFLAGS" \
-  --extra-ldflags="$LIBS $LDFLAGS" \
+  --extra-cflags="${INCLUDES} ${CFLAGS}" \
+  --extra-ldflags="${LIBS} ${LDFLAGS}" \
   --extra-cxxflags="$CXXFLAGS" \
   --extra-libs="-lgcc" \
-  --pkg-config=$FFMPEG_PKG_CONFIG || exit 1
+  --pkg-config=${FFMPEG_PKG_CONFIG} || exit 1
 
 make -j${HOST_NUM_CORES} && make install || exit 1
 popd
 
-echo -e "** BUILD COMPLETED: ffmpeg for ${1} **\n"
+echo -e "** BUILD COMPLETED: ffmpeg-v${VERSION} for ${1} **\n"

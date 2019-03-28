@@ -2,7 +2,10 @@
 . _settings.sh
 
 # defined modules to be included in ffmpeg built
+# if inlcude ffmpeg, then ffmpeg is built without the codec submodule
 MODULES=("vpx" "x264" "lame")
+# MODULES=("vpx")
+FFMPEG_SA=("ffmpeg")
 
 # Build only the specified module if given as second parameter
 if [[ $# -eq 2 ]]; then
@@ -10,8 +13,7 @@ if [[ $# -eq 2 ]]; then
 fi
 
 # Applying required patches
-echo -e "\n*** Applying patches for libvpx, ffmpeg and lamb ***"
-. ffmpeg_android_patch.sh
+. ffmpeg-android_patch.sh
 
 for ((i=0; i < ${#ABIS[@]}; i++))
   do
@@ -39,7 +41,12 @@ for ((i=0; i < ${#ABIS[@]}; i++))
           ;;
         esac
       done
-      ./_ffmpeg_build.sh "${ABIS[i]}" 'ffmpeg' "${MODULES[@]}" || exit 1
+
+      if [[ " ${MODULES[@]} " =~ " ffmpeg " ]]; then
+        ./_ffmpeg_build.sh "${ABIS[i]}" 'ffmpeg' "${FFMPEG_SA[@]}" || exit 1
+      else
+        ./_ffmpeg_build.sh "${ABIS[i]}" 'ffmpeg' "${MODULES[@]}" || exit 1
+      fi
     fi
   done
 

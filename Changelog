@@ -2,6 +2,17 @@
 # releases are sorted from youngest to oldest.
 
 #=============================================================
+vesrion 1.6.1 (2019/03/28)
+- Add new patches for libvpx fixing: relocation R_386_GOTOFF against preemptible symbol... (valid for v1.8.0, v1.7.0 & v1.6.1+)
+- Add new patches for libvpx fixing: sysroot for arm64-v8a
+- Add option --enable-pic (required when using SDK toolchains)
+- Add option to build standalone ffmpeg (aTalk) without the inclusion of the codec sub-modules
+- Add option --disable-postproc to ffmpeg build
+- Add dependency for options that are ABIS dependes in _<MODULE>_build.sh scripts
+- Clean up README.md information
+- Display module version in applying patches and building process
+
+#=============================================================
 vesrion 1.6.0 (2019/03/18)
 - Use ffmpeg-4.1.1, libvpx-1.8.0, vpx-157 and lame-3.100  for verification
 - Upate patches to include libvpx and x264 etc

@@ -14,13 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-### The following scripts are based on vpx v1.8.0 configure file options ###
+### The following scripts are based on vpx v1.6.1, v1.7.0 and v1.8.0 configure file options ###
+# Note: aTalk v1.8.0 uses libvpx-master i.e. 1.6.1+ (10/13/2017)
+# aTalk v1.7.3 is not compatible with libvpx-1.7.0
 
-echo -e "\n\n** BUILD STARTED: vpx for ${1} **"
+# Both has been fixed by patches: https://android.googlesource.com/platform/external/libvpx/+/ca30a60d2d6fbab4ac07c63bfbf7bbbd1fe6a583
+# libvpx > v1.6.1 has the following errors when build with aTalk; v1.6.1 also failed with --enable-pic
+# ./i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(deblock_sse2.asm.o): relocation R_386_GOTOFF against preemptible symbol vpx_rv cannot be used when making a shared object
+# ./i686-linux-android/4.9.x/../../../../i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(subpixel_mmx.asm.o): relocation R_386_GOTOFF against preemptible symbol # vp8_bilinear_filters_x86_8 cannot be used when making a shared object
+# ./i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(subpixel_mmx.asm.o): relocation R_386_GOTOFF against preemptible symbol vp8_bilinear_filters_x86_8 cannot be used when making a shared object
+# ./i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(subpixel_sse2.asm.o): relocation R_386_GOTOFF against preemptible symbol vp8_bilinear_filters_x86_8 cannot be used when making a shared object
+# ./i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(subpixel_sse2.asm.o): relocation R_386_GOTOFF against preemptible symbol vp8_bilinear_filters_x86_8 cannot be used when making a shared object
+
+# However libvpx-1.6.1 x86_64 has the same error
+# ./x86_64-linux-android/bin/ld: error: vpx/android/x86_64/lib/libvpx.a(deblock_sse2.asm.o): requires dynamic R_X86_64_PC32 reloc against 'vpx_rv' which may overflow at runtime; recompile with -fPIC
+
 . _settings.sh $*
 
 pushd libvpx
-make clean
+
+if [[ -f "./build/make/version.sh" ]]; then
+  version=`"./build/make/version.sh" --bare .`
+fi
+echo -e "\n\n** BUILD STARTED: vpx-${version} for ${1} **"
 
 case $1 in
   # libvpx does not provide armv5 build option
@@ -53,6 +69,7 @@ esac
   # ==> (Unable to invoke compiler: /arm-linux-androideabi-gcc)
   # https://bugs.chromium.org/p/webm/issues/detail?id=1476
   
+  # fixed by patch 11.libvpx_configure.sh.patch
   # https://github.com/google/ExoPlayer/issues/3520 (VP9 builds failure with android-ndk-r16 #3520)
   # https://github.com/android-ndk/ndk/issues/190#issuecomment-375164450 (unknown type name __uint128_t on ndk-build #190)
   # Has configure error with Target=arm64-android-gcc which uses incorrect cc i.e. arm-linux-androideabi-gcc;
@@ -80,16 +97,28 @@ esac
   # Cannot define option add_ldflags "-Wl,--fix-cortex-a8"
   # Standalone: arm-linux-androideabi-ld: -Wl,--fix-cortex-a8: unknown option
 
+  # Fixed by: https://android.googlesource.com/platform/external/libvpx/+/ca30a60d2d6fbab4ac07c63bfbf7bbbd1fe6a583
+  # libvpx has the following errors for x86 and x86_64 when build in aTalk app;
+  # ./i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(deblock_sse2.asm.o): relocation R_386_GOTOFF against preemptible symbol vpx_rv cannot be used when making a shared object
+  # ./i686-linux-android/4.9.x/../../../../i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(subpixel_mmx.asm.o): relocation R_386_GOTOFF against preemptible symbol # vp8_bilinear_filters_x86_8 cannot be used when making a shared object
+  # ./i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(subpixel_mmx.asm.o): relocation R_386_GOTOFF against preemptible symbol vp8_bilinear_filters_x86_8 cannot be used when making a shared object
+  # ./i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(subpixel_sse2.asm.o): relocation R_386_GOTOFF against preemptible symbol vp8_bilinear_filters_x86_8 cannot be used when making a shared object
+  # ./i686-linux-android/bin/ld: error: vpx/android/x86/lib/libvpx.a(subpixel_sse2.asm.o): relocation R_386_GOTOFF against preemptible symbol vp8_bilinear_filters_x86_8 cannot be used when making a shared object
+  # ./x86_64-linux-android/bin/ld: error: vpx/android/x86_64/lib/libvpx.a(deblock_sse2.asm.o): requires dynamic R_X86_64_PC32 reloc against 'vpx_rv' which may overflow at runtime; recompile with -fPIC
+
+make clean
 ./configure \
   --sdk-path=${NDK} \
-  --extra-cflags="-isystem ${NDK}/sysroot/usr/include/${NDK_ABIARCH} -isystem ${NDK}/sysroot/usr/include" \
+  --extra-cflags="-isystem ${NDK_SYSROOT}/usr/include/${NDK_ABIARCH} -isystem ${NDK_SYSROOT}/usr/include" \
   --libc=${NDK_SYSROOT} \
   --prefix=${PREFIX} \
   --target=${TARGET} \
   --as=yasm \
-  --enable-static \
+  --enable-pic \
   --disable-runtime-cpu-detect \
   --disable-docs \
+  --enable-static \
+  --enable-libyuv \
   --disable-examples \
   --disable-tools \
   --disable-debug \
@@ -100,19 +129,7 @@ esac
   --disable-webm-io || exit 1
 
 make -j${HOST_NUM_CORES} install || exit 1
-
-# OUTPUT_ROOT=${TOOLS_ROOT}/output/android/${ABI}
-# [ -d ${OUTPUT_ROOT}/include ] || mkdir -p ${OUTPUT_ROOT}/include/vpx \
-#	&& mkdir -p ${OUTPUT_ROOT}/include/common \
-#	&& mkdir -p ${OUTPUT_ROOT}/include/mkvmuxer \
-#	&& mkdir -p ${OUTPUT_ROOT}/include/mkvparser \
-#	&& mkdir -p ${OUTPUT_ROOT}/include/libmkv
-   # cp -r ./third_party/libwebm/common/*.h ${OUTPUT_ROOT}/include/common
-   # cp -r ./third_party/libwebm/mkvmuxer/*.h ${OUTPUT_ROOT}/include/mkvmuxer
-   # cp -r ./third_party/libwebm/mkvparser/*.h ${OUTPUT_ROOT}/include/mkvparser
-
-## cp -r ./third_party/libmkv/*.h ${OUTPUT_ROOT}/include/libmkv
   
 popd
-echo -e "** BUILD COMPLETED: vpx for ${1} **\n"
+echo -e "** BUILD COMPLETED: vpx-${version} for ${1} **\n"
 
