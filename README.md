@@ -55,7 +55,7 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
 * The scripts has been verified working with the following configurations:
   - ABIS: armeabi-v7a, arm64-v8a, x86, x86_64
   - MODULES (with applied patches): ffmpeg-v4.1.1, libvpx-v1.8.0, x264-v157, lame-v3.100  
-  - NDK version: ndk-r17c
+  - NDK version: ndk-r17c (build failed with lower or higher versions - see below)
   - ANDROID_API: 21
 
 * x264 (v157 and v152):
@@ -87,7 +87,8 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
 
 * ffmpeg (v4.1.1):
   - Must include option --disable-asm for x86, otherwise <br/>
-    libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available
+    libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available<br/>
+    ffmpeg (v1.0.10) => must also include this option for arm/arm64 build, otherwise errors during compilation 
   - ndk-r18b, ndk-r17c => give error on: (fixed by patch)<br/>
     libavdevice/v4l2.c:135:9: error: assigning to 'int (*)(int, unsigned long, ...)' from incompatible type '<overloaded function type>'
         SET_WRAPPERS();

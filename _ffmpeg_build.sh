@@ -27,7 +27,11 @@ LDFLAGS='-pie -lc -lm -ldl -llog'
 . _settings.sh $*
 
 pushd ffmpeg
-VERSION=$(./ffbuild/version.sh .)
+if [[ -f "./ffbuild/version.sh" ]]; then
+  VERSION=$(./ffbuild/version.sh .)
+else
+  VERSION=$(./version.sh .)
+fi
 echo -e "\n\n** BUILD STARTED: ffmpeg-v${VERSION} for ${1} **"
 
 case $1 in
@@ -114,9 +118,15 @@ FFMPEG_PKG_CONFIG=${BASEDIR}/ffmpeg-pkg-config
 
 #  Must include option --disable-asm for x86, otherwise
 # libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available
+# ffmpeg-1.0.10 has inline assembly error when using clang
 DISASM=""
-if [[ $1 =~ x86.* ]]; then
+if [[ $1 =~ x86.* ]] || [[ "${VERSION}" == 1.0.10 ]]; then
    DISASM="--disable-asm"
+fi
+
+PROGRAM="--disable-programs"
+if [[ ${VERSION} == 1.0.10 ]]; then
+  PROGRAM="--disable-ffserver"
 fi
 
 make clean
@@ -139,9 +149,9 @@ make clean
   --disable-pthreads \
   --enable-hardcoded-tables \
   ${MODULES} \
+  ${PROGRAM} \
   --enable-gpl \
   --disable-postproc \
-  --disable-programs \
   --disable-ffmpeg \
   --disable-ffplay \
   --disable-ffprobe \

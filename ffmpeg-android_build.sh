@@ -4,7 +4,6 @@
 # defined modules to be included in ffmpeg built
 # if inlcude ffmpeg, then ffmpeg is built without the codec submodule
 MODULES=("vpx" "x264" "lame")
-# MODULES=("vpx")
 FFMPEG_SA=("ffmpeg")
 
 # Build only the specified module if given as second parameter
