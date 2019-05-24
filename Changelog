@@ -2,6 +2,10 @@
 # releases are sorted from youngest to oldest.
 
 #=============================================================
+version 1.6.3 (2019/05/24)
+- use option --enable-runtime-cpu-detect for x86/x86_64 platforms in vpx library build to fix runtime problem
+
+#=============================================================
 version 1.6.2 (2019/03/29)
 - Add support for ffmpeg-1.0.10 build with clang (generated *.a libraries seems large)
 - Include patches for ffmpeg-1.0.10

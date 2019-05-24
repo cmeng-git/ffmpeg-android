@@ -16,7 +16,7 @@
 
 # Uncomment the line below to see all script echo to terminal
 # set -x
-if [ "$ANDROID_NDK" = "" ]; then
+if [[ $ANDROID_NDK = "" ]]; then
 	echo "You need to set ANDROID_NDK environment variable, exiting"
 	echo "Use: export ANDROID_NDK=/your/path/to/android-ndk"
 	echo "e.g.: export ANDROID_NDK=/opt/android/android-ndk-r17c"
@@ -38,7 +38,6 @@ NDK_ABI_VERSION=4.9
 
 # Android recommended architecture support; others are deprecated
 ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-# ABIS=("x86" "x86_64")
 
 BASEDIR=`pwd`
 TOOLCHAIN_PREFIX=${BASEDIR}/toolchain-android
@@ -52,9 +51,14 @@ HOST_NUM_CORES=$(nproc)
 
 # https://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Optimize-Options.html
 # Note: vpx with ABIs x86 and x86_64 build has error with option -fstack-protector-all
-CFLAGS="-fpic -fpie -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -fno-strict-overflow -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
+
+# Note: final libraries built is 20~33% bigger in size when below additional options are specified
+# CFLAGS_="-DANDROID -fpic -fpie -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -fno-strict-overflow -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
+CFLAGS_="-DANDROID -fpic -fpie"
+
+
 # Enable report-all for earlier detection of errors instead at later stage
-LDFLAGS="-Wl,-z,defs -Wl,--unresolved-symbols=report-all"
+LDFLAGS_="-Wl,-z,defs -Wl,--unresolved-symbols=report-all"
 
 # Do not modify any of the NDK_ARCH, CPU and -march unless you are very sure.
 # The settings are used by <ARCH>-linux-android-gcc and submodule configure
@@ -70,7 +74,7 @@ case $1 in
     HOST='arm-linux'
     NDK_ARCH="arm"
     NDK_ABIARCH='arm-linux-androideabi'
-    CFLAGS="${CFLAGS} -march=${CPU} -mthumb -finline-limit=64"
+    CFLAGS="${CFLAGS_} -march=${CPU} -mthumb -finline-limit=64"
     ASFLAGS=""
   ;;
   # https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/ARM-Options.html#ARM-Options
@@ -80,9 +84,9 @@ case $1 in
     NDK_ARCH='arm'
     NDK_ABIARCH='arm-linux-androideabi'
     # clang70: warning: -Wl,--fix-cortex-a8: 'linker' input unused [-Wunused-command-line-argument]
-    # CFLAGS="${CFLAGS} -Wl,--fix-cortex-a8 -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
-    CFLAGS="${CFLAGS} -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
-    LDFLAGS="${LDFLAGS} -march=${CPU}"
+    # CFLAGS="${CFLAGS_} -Wl,--fix-cortex-a8 -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    CFLAGS="${CFLAGS_} -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    LDFLAGS="${LDFLAGS_} -march=${CPU}"
     ASFLAGS=""
 
     # 1. -march=${CPU} flag targets the armv7 architecture.
@@ -97,10 +101,10 @@ case $1 in
     # LDFLAGS="-Wl,--fix-cortex-a8"
 
     # arm v7vfpv3
-    # CFLAGS="${CFLAGS} -march=${CPU} -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb"
+    # CFLAGS="${CFLAGS_} -march=${CPU} -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb"
 
     # arm v7 + neon (neon also include vfpv3-32)
-    # CFLAGS="${CFLAGS} -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    # CFLAGS="${CFLAGS_} -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
   ;;
   arm64-v8a)
     # Valid cpu = armv8-a cortex-a35, cortex-a53, cortec-a57 etc. but -march=armv8-a is required
@@ -110,8 +114,8 @@ case $1 in
     HOST='aarch64-linux'
     NDK_ARCH='arm64'
     NDK_ABIARCH='aarch64-linux-android'
-    CFLAGS="${CFLAGS} -march=armv8-a"
-    LDFLAGS="${LDFLAGS} -march=armv8-a"
+    CFLAGS="${CFLAGS_} -march=armv8-a"
+    LDFLAGS="${LDFLAGS_} -march=armv8-a"
     ASFLAGS=""
   ;;
   x86)
@@ -119,7 +123,7 @@ case $1 in
     HOST='i686-linux'
     NDK_ARCH='x86'
     NDK_ABIARCH='i686-linux-android'
-    CFLAGS="${CFLAGS} -O2 -march=${CPU} -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
+    CFLAGS="${CFLAGS_} -O2 -march=${CPU} -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
     LDFLAGS="-m32"
     ASFLAGS="-D__ANDROID__"
   ;;
@@ -128,7 +132,7 @@ case $1 in
     HOST='x86_64-linux'
     NDK_ARCH='x86_64'
     NDK_ABIARCH='x86_64-linux-android'
-    CFLAGS="${CFLAGS} -O2 -march=${CPU} -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
+    CFLAGS="${CFLAGS_} -O2 -march=${CPU} -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
     LDFLAGS=""
     ASFLAGS="-D__ANDROID__"
   ;;
@@ -142,7 +146,7 @@ case $1 in
     HOST='mips-linux'
     NDK_ARCH='mips'
     NDK_ABIARCH="mipsel-linux-android"
-    CFLAGS="${CFLAGS} -EL -march=${CPU} -mhard-float"
+    CFLAGS="${CFLAGS_} -EL -march=${CPU} -mhard-float"
     ASFLAGS=""
   ;;
   mips64)
@@ -151,7 +155,7 @@ case $1 in
     HOST='mips64-linux'
     NDK_ARCH='mips64'
     NDK_ABIARCH='mips64el-linux-android'
-    CFLAGS="${CFLAGS} -EL -mfp64 -mhard-float"
+    CFLAGS="${CFLAGS_} -EL -mfp64 -mhard-float"
     ASFLAGS=""
   ;;
 esac
@@ -160,7 +164,7 @@ esac
 # However for ndk--r19b => Instead use:
 #    $ ${NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ src.cpp
 # cmeng: must ensure AS JNI uses the same STL library or "system" if specified
-  [ -d ${TOOLCHAIN_PREFIX} ] || python ${NDK}/build/tools/make_standalone_toolchain.py \
+  [[ -d ${TOOLCHAIN_PREFIX} ]] || python ${NDK}/build/tools/make_standalone_toolchain.py \
     --arch ${NDK_ARCH} \
     --api ${ANDROID_API} \
     --stl libc++ \

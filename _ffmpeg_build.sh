@@ -42,8 +42,7 @@ case $1 in
     LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now -Wl,--fix-cortex-a8"
   ;;
   arm64-v8a)
-    #  -Wl,--unresolved-symbols=ignore-in-shared-libs fixes x264 undefined references for arm64-v8a
-    LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now  -Wl,--unresolved-symbols=ignore-in-shared-libs"
+    LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now"
   ;;
   x86)
     LDFLAGS="${LDFLAGS}"
