@@ -13,6 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Note: aTalk v2.3.1 is only compatible to ffmpeg v3.4.6
+
 # set -x
 
 # https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/Link-Options.html#Link-Options
@@ -22,7 +25,7 @@
 
 # LDFLAGS='-pie -fuse-ld=gold -Wl,-z,relro -Wl,-z,now -nostdlib -lc -lm -ldl -llog'
 # -fuse-ld=gold: use ld.gold linker but unavailable for ABI mips and mips64
-LDFLAGS='-pie -lc -lm -ldl -llog'
+# LDFLAGS='-pie -lc -lm -ldl -llog'
 
 . _settings.sh $*
 
@@ -42,6 +45,7 @@ case $1 in
     LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now -Wl,--fix-cortex-a8"
   ;;
   arm64-v8a)
+    #  -Wl,--unresolved-symbols=ignore-in-shared-libs fixes x264 undefined references for arm64-v8a
     LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now"
   ;;
   x86)
@@ -74,7 +78,8 @@ for m in "$@"
         INCLUDES="${INCLUDES} -I${PREFIX_}/include/$m"
         LIBS="${LIBS} -L${PREFIX_}/lib"
         cp -r ${PREFIX_}/lib/pkgconfig ${PREFIX}/lib
-        MODULES="${MODULES} --enable-libx264 --enable-version3"
+        MODULES="${MODULES} --enable-libx264 --enable-parser=h264"
+		# --enable-libopenh264 --enable-encoder=libopenh264 --enable-decoder=libopenh264 for openh264
       ;;
       vpx)
         INCLUDES="${INCLUDES} -I${PREFIX_}/include"
@@ -92,7 +97,13 @@ for m in "$@"
         INCLUDES="${INCLUDES} -I${PREFIX_}/include"
         LIBS="${LIBS} -L${PREFIX_}/lib"
         # cp -r ${PREFIX_}/lib/pkgconfig ${PREFIX}/lib/pkgconfig
-        MODULES="${MODULES} --enable-libmp3lame"
+        MODULES="${MODULES} --enable-libmp3lame --disable-iconv"
+      ;;
+      amrwb)
+        INCLUDES="${INCLUDES} -I${PREFIX_}/include"
+        LIBS="${LIBS} -L${PREFIX_}/lib"
+        cp -r ${PREFIX_}/lib/pkgconfig ${PREFIX}/lib
+        MODULES="${MODULES} --enable-libopencore-amrwb --enable-libvo-amrwbenc"
       ;;
     esac
  done
@@ -103,6 +114,11 @@ for m in "$@"
 # --enable-gpl required for libpostproc build
 # --disable-postproc: https://trac.ffmpeg.org/wiki/Postprocessing
 # Anyway, most of the time it won't help to postprocess h.264, HEVC, VP8, or VP9 video.
+
+# When NDK is r17c or higher, the following error happen (r16b is OK)
+# libavdevice/v4l2.c:135:9: error: assigning to 'int (*)(int, unsigned long, ...)' from incompatible type '<overloaded function type>'
+#        SET_WRAPPERS();
+# see https://github.com/tanersener/mobile-ffmpeg/issues/48 for solution
 
 # do no set ld option and use as=gcc for clang
 TC_OPTIONS="--nm=${NM} --ar=${AR} --as=${CROSS_PREFIX}gcc --strip=${STRIP} --cc=${CC} --cxx=${CXX}"
@@ -133,32 +149,46 @@ make clean
   --prefix=${PREFIX} \
   --cross-prefix=${CROSS_PREFIX} \
   --sysroot=${NDK_SYSROOT} \
-  --target-os=android \
   --arch=${NDK_ARCH} \
   --cpu=${CPU} \
-  ${DISASM} \
   ${TC_OPTIONS} \
-  --enable-cross-compile \
   --enable-static \
   --disable-shared \
+  ${DISASM} \
+  --enable-cross-compile \
+  --target-os=android \
   --enable-pic \
   --disable-doc \
   --disable-debug \
   --disable-runtime-cpudetect \
   --disable-pthreads \
   --enable-hardcoded-tables \
-  ${MODULES} \
   ${PROGRAM} \
-  --enable-gpl \
+  --enable-version3 \
   --disable-postproc \
+  --disable-programs \
   --disable-ffmpeg \
   --disable-ffplay \
   --disable-ffprobe \
+  --disable-network \
+  --disable-iconv \
+  --enable-decoder=mjpeg \
+  --enable-parser=mjpeg \
+  --enable-filter=format \
+  --enable-filter=hflip \
+  --enable-filter=scale \
+  --enable-filter=nullsink \
+  --enable-filter=vflip \
+  ${MODULES} \
+  --enable-gpl \
   --extra-cflags="${INCLUDES} ${CFLAGS}" \
   --extra-ldflags="${LIBS} ${LDFLAGS}" \
   --extra-cxxflags="$CXXFLAGS" \
   --extra-libs="-lgcc" \
   --pkg-config=${FFMPEG_PKG_CONFIG} || exit 1
+
+#  --extra-libs="-lgcc -lstdc++" \
+# -lstdc++ requires by openh264
 
 make -j${HOST_NUM_CORES} && make install || exit 1
 popd

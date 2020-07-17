@@ -16,6 +16,10 @@
 
 # Uncomment the line below to see all script echo to terminal
 # set -x
+
+# When use --sdk-path option for libvpx v1.8.0; must use android-ndk-r17c or lower
+# May use android-ndk-r18b" - libvpx v1.8.2 is working with r18b without error
+
 if [[ $ANDROID_NDK = "" ]]; then
 	echo "You need to set ANDROID_NDK environment variable, exiting"
 	echo "Use: export ANDROID_NDK=/your/path/to/android-ndk"
@@ -54,11 +58,14 @@ HOST_NUM_CORES=$(nproc)
 
 # Note: final libraries built is 20~33% bigger in size when below additional options are specified
 # CFLAGS_="-DANDROID -fpic -fpie -ffunction-sections -funwind-tables -fstack-protector -fno-strict-aliasing -fno-strict-overflow -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"
-CFLAGS_="-DANDROID -fpic -fpie"
-
+# -DBIONIC_IOCTL_NO_SIGNEDNESS_OVERLOAD: see https://github.com/tanersener/mobile-ffmpeg/issues/48
+CFLAGS_="-DANDROID -fpic -fpie -DBIONIC_IOCTL_NO_SIGNEDNESS_OVERLOAD"
 
 # Enable report-all for earlier detection of errors instead at later stage
-LDFLAGS_="-Wl,-z,defs -Wl,--unresolved-symbols=report-all"
+# /home/cmeng/workspace/ndk/vpx-android/armeabi-v7a-android-toolchain/bin/arm-linux-androideabi-ld: -Wl,-z,defs -Wl,--unresolved-symbols=report-all: unknown option
+# Not compatible with libvpx v.1.8.2
+# LDFLAGS_="-Wl,-z,defs -Wl,--unresolved-symbols=report-all"
+LDFLAGS_=""
 
 # Do not modify any of the NDK_ARCH, CPU and -march unless you are very sure.
 # The settings are used by <ARCH>-linux-android-gcc and submodule configure
@@ -85,8 +92,8 @@ case $1 in
     NDK_ABIARCH='arm-linux-androideabi'
     # clang70: warning: -Wl,--fix-cortex-a8: 'linker' input unused [-Wunused-command-line-argument]
     # CFLAGS="${CFLAGS_} -Wl,--fix-cortex-a8 -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
-    CFLAGS="${CFLAGS_} -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
-    LDFLAGS="${LDFLAGS_} -march=${CPU}"
+    CFLAGS="${CFLAGS_} -Os -march=${CPU} -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb -D__thumb__"
+    LDFLAGS="${LDFLAGS_} -march=${CPU}"  # -Wl,--fix-cortex-a8" not valid option
     ASFLAGS=""
 
     # 1. -march=${CPU} flag targets the armv7 architecture.
@@ -114,8 +121,11 @@ case $1 in
     HOST='aarch64-linux'
     NDK_ARCH='arm64'
     NDK_ABIARCH='aarch64-linux-android'
-    CFLAGS="${CFLAGS_} -march=armv8-a"
-    LDFLAGS="${LDFLAGS_} -march=armv8-a"
+    CFLAGS="${CFLAGS_} -O3 -march=armv8-a"
+      # Supported emulations: aarch64linux aarch64elf aarch64elf32 aarch64elf32b aarch64elfb armelf armelfb
+      # aarch64linuxb aarch64linux32 aarch64linux32b armelfb_linux_eabi armelf_linux_eabi
+	  #-march=armv8-a or arch64linux: all are not valid for libvpx v1.8.2 build with standalone toolchains
+    LDFLAGS="${LDFLAGS_}" 
     ASFLAGS=""
   ;;
   x86)
@@ -123,7 +133,7 @@ case $1 in
     HOST='i686-linux'
     NDK_ARCH='x86'
     NDK_ABIARCH='i686-linux-android'
-    CFLAGS="${CFLAGS_} -O2 -march=${CPU} -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
+    CFLAGS="${CFLAGS_} -O3 -march=${CPU} -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
     LDFLAGS="-m32"
     ASFLAGS="-D__ANDROID__"
   ;;
@@ -132,7 +142,7 @@ case $1 in
     HOST='x86_64-linux'
     NDK_ARCH='x86_64'
     NDK_ABIARCH='x86_64-linux-android'
-    CFLAGS="${CFLAGS_} -O2 -march=${CPU} -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
+    CFLAGS="${CFLAGS_} -O3 -march=${CPU} -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
     LDFLAGS=""
     ASFLAGS="-D__ANDROID__"
   ;;
@@ -163,14 +173,18 @@ esac
 # Create standalone toolchains for the specified architecture - use .py instead of the old .sh
 # However for ndk--r19b => Instead use:
 #    $ ${NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ src.cpp
+NDK_SYSROOT=${TOOLCHAIN_PREFIX}/sysroot
+
+if [[ ! -e ${TOOLCHAIN_PREFIX}/${NDK_ABIARCH} ]]; then
+    rm -rf ${TOOLCHAIN_PREFIX}
+fi
+
 # cmeng: must ensure AS JNI uses the same STL library or "system" if specified
   [[ -d ${TOOLCHAIN_PREFIX} ]] || python ${NDK}/build/tools/make_standalone_toolchain.py \
     --arch ${NDK_ARCH} \
     --api ${ANDROID_API} \
     --stl libc++ \
     --install-dir=${TOOLCHAIN_PREFIX}
-
-NDK_SYSROOT=${TOOLCHAIN_PREFIX}/sysroot
 
 # Define the install directory of the libs and include files etc
 # lame needs absolute path
@@ -184,7 +198,7 @@ export CFLAGS="${CFLAGS}"
 export CPPFLAGS="${CFLAGS}"
 export CXXFLAGS="${CFLAGS} -std=c++11"
 export ASFLAGS="${ASFLAGS}"
-export LDFLAGS="${LDFLAGS} -L${NDK_SYSROOT}"
+export LDFLAGS="${LDFLAGS} -L${NDK_SYSROOT}/usr/lib"
 
 export AR="${CROSS_PREFIX}ar"
 export AS="${CROSS_PREFIX}clang"
@@ -202,7 +216,8 @@ export PKG_CONFIG="${CROSS_PREFIX}pkg-config"
 export PKG_CONFIG_LIBDIR=${PREFIX}/lib/pkgconfig
 export PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 
+echo "**********************************************"
 echo "### Use NDK=${NDK}"
 echo "### Use ANDROID_API=${ANDROID_API}"
 echo "### Install directory: PREFIX=${PREFIX}"
-
+echo "**********************************************"

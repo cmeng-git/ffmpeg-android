@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2016 cmeng
+# Copyright 2016 Eng Chong Meng
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-### The following scripts are based on vpx v1.6.1, v1.7.0 and v1.8.0 configure file options ###
+### The following scripts are based on vpx v1.6.1, v1.7.0 and v1.8.x configure file options ###
 # aTalk v1.8.1 and below uses libvpx-master i.e. 1.6.1+ (10/13/2017)
 # aTalk v1.8.2 uses libvpx-1.8.0
+# aTalk v2.3.2 uses libvpx-1.8.2
 
 ## Both problems #1 & #2 below have been fixed by patches from: https://android.googlesource.com/platform/external/libvpx/+/ca30a60d2d6fbab4ac07c63bfbf7bbbd1fe6a583
 ## However the compiled libjnvpx.so has problem when exec on x86_64 android platform:
@@ -45,25 +46,25 @@ case $1 in
   # libvpx does not provide armv5 build option
   armeabi)
     TARGET="armv7-android-gcc --disable-neon --disable-neon-asm"
-	CPU_DETECT="--disable-runtime-cpu-detect"
   ;;
+  # need to add --disable-neon-asm for libvpx v1.8.2, otherwise:
+  # clang70: error: linker command failed with exit code 1 (use -v to see invocation)
+  # ./lib/crtbegin_dynamic.o:crtbegin.c:function _start_main: error: undefined reference to 'main'
+  # make[1]: *** [vpx_dsp/arm/intrapred_neon_asm.asm.S.o] Error 1
+  # make[1]: *** [vpx_dsp/arm/vpx_convolve_copy_neon_asm.asm.S.o] Error 1
   armeabi-v7a)
-    TARGET="armv7-android-gcc"
-	CPU_DETECT="--disable-runtime-cpu-detect"
+    TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
   ;;
   arm64-v8a)
     # valid arguments to '-mfpu=' are: crypto-neon-fp-armv8 fp-armv8 fpv4-sp-d16 neon neon-fp-armv8 neon-fp16 neon-vfpv4 vfp vfp3 vfpv3
     # vfpv3-d16 vfpv3-d16-fp16 vfpv3-fp16 vfpv3xd vfpv3xd-fp16 vfpv4 vfpv4-d16
     TARGET="arm64-android-gcc"
-	CPU_DETECT="--disable-runtime-cpu-detect"
   ;;
   x86)
     TARGET="x86-android-gcc"
-   CPU_DETECT="--enable-runtime-cpu-detect"
   ;;
   x86_64)
     TARGET="x86_64-android-gcc"
-   CPU_DETECT="--enable-runtime-cpu-detect"
   ;;
   mips)
     TARGET="mips32-linux-gcc"
@@ -98,6 +99,7 @@ esac
   # must specified -libc from standalone toolchains, libvpx configure.sh cannot get the right arch to use
 
   # SDK toolchains has error with ndk-r18b; however ndk-R17c and ndk-r16b are ok (gcc/g++)
+  # SDK toolchains ndk-r18b is working with libvpx v1.8.2 without the sdk option
 
   # Standalone toolchains built has problem with ABIS="armeabi-v7a"
   # /tmp/vpx-conf-31901-2664.o(.ARM.exidx.text.main+0x0): error: undefined reference to '__aeabi_unwind_cpp_pr0'
@@ -119,9 +121,17 @@ esac
   # see https://bugs.chromium.org/p/webm/issues/detail?id=1623#c1
   # OR use option --enable-runtime-cpu-detect for x86/x86_64 ABIS platforms
 
+CPU_DETECT="--disable-runtime-cpu-detect"
+if [[ $1 =~ x86.* ]]; then
+   CPU_DETECT="--enable-runtime-cpu-detect"
+fi
+
+# When use --sdk-path option for libvpx v1.8.0; must use android-ndk-r17c or lower
+# For libvpx v1.8.2: in order to use standalone toolchanis, must not specified --sdk-path (option removed)
+#    --sdk-path=${NDK}
+
 make clean
 ./configure \
-  --sdk-path=${NDK} \
   --extra-cflags="-isystem ${NDK_SYSROOT}/usr/include/${NDK_ABIARCH} -isystem ${NDK_SYSROOT}/usr/include" \
   --libc=${NDK_SYSROOT} \
   --prefix=${PREFIX} \

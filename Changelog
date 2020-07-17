@@ -2,6 +2,12 @@
 # releases are sorted from youngest to oldest.
 
 #=============================================================
+version 1.6.4 (2020/07/17)
+- Clean up scripts for libvpx v1.8.2 build
+- Update lame patch file to use configure file for version extraction
+- Include solution for ffmpeg 4.1.1 when compiled with NDK r18b
+
+#=============================================================
 version 1.6.3 (2019/05/24)
 - use option --enable-runtime-cpu-detect for x86/x86_64 platforms in vpx library build to fix runtime problem
 

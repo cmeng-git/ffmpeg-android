@@ -1,6 +1,40 @@
---- a/libvpx/build/make/configure.sh	2019-02-05 01:02:33.000000000
-+++ b/libvpx/build/make/configure.sh	2019-03-19 17:28:21.000000000
-@@ -1104,40 +1104,59 @@
+--- a/libvpx/build/make/configure.sh	2019-03-13 08:20:13.000000000
++++ b/libvpx/build/build/make/configure.sh	2019-04-15 09:33:34.000000000
+@@ -1013,17 +1013,14 @@
+             win*)
+               asm_conversion_cmd="$asm_conversion_cmd -noelf"
+               AS="$CC -c"
+               EXE_SFX=.exe
+               enable_feature thumb
+               ;;
+-            *)
+-              check_add_asflags --defsym ARCHITECTURE=${arch_int}
+-              ;;
+-          esac
+-
++          esac
++
+           if enabled thumb; then
+             asm_conversion_cmd="$asm_conversion_cmd -thumb"
+             check_add_cflags -mthumb
+             check_add_asflags -mthumb -mimplicit-it=always
+           fi
+           ;;
+@@ -1087,13 +1084,12 @@
+               check_add_cflags --cpu=${tgt_isa##armv}
+               check_add_asflags --cpu=${tgt_isa##armv}
+             fi
+           fi
+           arch_int=${tgt_isa##armv}
+           arch_int=${arch_int%%te}
+-          check_add_asflags --pd "\"ARCHITECTURE SETA ${arch_int}\""
+           enabled debug && add_asflags -g
+           add_cflags --gnu
+           add_cflags --enum_is_int
+           add_cflags --wchar32
+           ;;
+       esac
+@@ -1104,40 +1100,59 @@
            disable_feature os_support
            ;;
  

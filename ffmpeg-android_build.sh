@@ -38,6 +38,9 @@ for ((i=0; i < ${#ABIS[@]}; i++))
           lame)
             ./_lame_build.sh "${ABIS[i]}" $m || exit 1
           ;;
+          amrwb)
+            # ./_amr_build.sh "${ABIS[i]}" $m || exit 1
+          ;;
         esac
       done
 
