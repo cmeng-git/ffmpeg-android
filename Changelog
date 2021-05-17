@@ -1,5 +1,18 @@
 # Entries are sorted chronologically from oldest to youngest within each release,
 # releases are sorted from youngest to oldest.
+#=============================================================
+version 1.6.7 (2021/05/17)
+- Clean up scripts for ffmpeg v4.4 build
+- Clean up scripts for x264 v161.3049 build
+
+#=============================================================
+version 1.6.6 (2021/04/28)
+- Clean up scripts for libvpx v1.10.0 build
+
+#=============================================================
+version 1.6.5 (2020/07/25)
+- add amr codec
+- use option --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3
 
 #=============================================================
 version 1.6.4 (2020/07/17)
@@ -30,7 +43,7 @@ vesrion 1.6.1 (2019/03/28)
 
 #=============================================================
 version 1.6.0 (2019/03/18)
-- Use ffmpeg-4.1.1, libvpx-1.8.0, vpx-157 and lame-3.100  for verification
+- Use ffmpeg-4.1.1, libvpx-1.8.0, x264-157 and lame-3.100  for verification
 - Upate patches to include libvpx and x264 etc
 - Update _vpx_build.sh to use SDK or Standalone toolchains (see _vpx_build.sh for details)
 - Change prefix to each sub-modules sub-directory for compatibility with aTalk

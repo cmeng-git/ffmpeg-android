@@ -18,9 +18,9 @@
 # set -x
 
 # When use --sdk-path option for libvpx v1.8.0; must use android-ndk-r17c or lower
-# May use android-ndk-r18b" - libvpx v1.8.2 is working with r18b without error
+# May use android-ndk-r18b" - libvpx v1.10.0 and libvpx v1.8.2 are working with r18b without error
 
-if [[ $ANDROID_NDK = "" ]]; then
+if [[ -z $ANDROID_NDK ]]; then
 	echo "You need to set ANDROID_NDK environment variable, exiting"
 	echo "Use: export ANDROID_NDK=/your/path/to/android-ndk"
 	echo "e.g.: export ANDROID_NDK=/opt/android/android-ndk-r17c"
@@ -34,7 +34,7 @@ set -u
 ANDROID_API=21
 NDK_ABI_VERSION=4.9
 
-# Built with command i.e. ./ffmpeg-android_build.sh or following with parameter [ABIS(x)]
+# Built with command i.e. ./build-ffmpeg4android.sh or following with parameter [ABIS(x)]
 # Create custom ABIS or uncomment to build all supported abi for ffmpeg.
 # Do not change naming convention of the ABIS; see:
 # https://developer.android.com/ndk/guides/abis.html#Native code in app packages
@@ -133,7 +133,7 @@ case $1 in
     HOST='i686-linux'
     NDK_ARCH='x86'
     NDK_ABIARCH='i686-linux-android'
-    CFLAGS="${CFLAGS_} -O3 -march=${CPU} -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
+    CFLAGS="${CFLAGS_} -O3 -march=i686 -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
     LDFLAGS="-m32"
     ASFLAGS="-D__ANDROID__"
   ;;
@@ -142,7 +142,7 @@ case $1 in
     HOST='x86_64-linux'
     NDK_ARCH='x86_64'
     NDK_ABIARCH='x86_64-linux-android'
-    CFLAGS="${CFLAGS_} -O3 -march=${CPU} -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
+    CFLAGS="${CFLAGS_} -O3 -march=x86-64 -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
     LDFLAGS=""
     ASFLAGS="-D__ANDROID__"
   ;;
@@ -156,7 +156,7 @@ case $1 in
     HOST='mips-linux'
     NDK_ARCH='mips'
     NDK_ABIARCH="mipsel-linux-android"
-    CFLAGS="${CFLAGS_} -EL -march=${CPU} -mhard-float"
+    CFLAGS="${CFLAGS_} -EL -march=p5600 -mhard-float"
     ASFLAGS=""
   ;;
   mips64)

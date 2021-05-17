@@ -1,6 +1,15 @@
 # ffmpeg-android
 
-* FFmpeg for Android with libvpx, x264 and lame options
+* FFmpeg for Android with libvpx, x264 and lame options. The scripts in this repository are configured to build:
+<table>
+<thead>
+<tr><td>library</td><td>version</td><td>platform support</td><td>arch support</td></tr>
+</thead>
+<tr><td>ffmpeg</td><td>4.1.1</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
+<tr><td>libvpx</td><td>1.10.0</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
+<tr><td>x264</td><td>160</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
+<tr><td>lame</td><td>3.100</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
+</table>
 
 ## Supported android ABI's
 * armeabi*
@@ -20,10 +29,11 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
 * Set environment ANDROID_NDK variable; not all ndk releases work with all modules/ABIS combinations
   - export ANDROID_NDK={Android NDK Base Path}<br/>
      e.g. export ANDROID_NDK=/opt/android/android-ndk-r17c (recommended);
+  - Note: android-ndk-r18b will have problem in some module builds e.g. lame
 * If necessary, fetch and update all libraries source (before build);
-  - review and edit ./init_update_libs.sh file for your desired modules' versions, then issue
+  - review and edit ./init_update_libs.sh file for your desired modules' versions, then run
   - ./init_update_libs.sh
-  - The default codec module sub-directories are ffmpeg, libvpx, x264 and lame
+  - The default codec module extracted sub-directories are ffmpeg, libvpx, x264 and lame
   - Optionally, go to the respective directory for each sub-module, and execute ./configure without option;<br/>
      The configure process may list any missing sdk build tools, please install before continue
   - The actual configure with options for each submodule build is done in each submodule _\<module>_build.sh build script
@@ -56,7 +66,7 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
 * The scripts has been verified working with the following configurations:
   - NDK version: ndk-r17c (build may failed with lower or higher versions - see below)
   - ABIS: armeabi-v7a, arm64-v8a, x86, x86_64
-  - MODULES (with applied patches): ffmpeg-v4.1.1, libvpx-v1.8.2, x264-v160, lame-v3.100
+  - MODULES (with applied patches): ffmpeg-v4.1.1, libvpx-v1.10.0, x264-v160, lame-v3.100
   - ANDROID_API: 21
 
 * x264 (v160, v157 and v152):
@@ -66,22 +76,22 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
     However must include the option for x86 and x86_64; otherwise have relocate text, requires dynamic R_X86_64_PC32 etc when use in aTalk
   - ndk-r18b, ndk-r17c, ndk-16b, ndk-r15c (build all)
 
-* libvpx (v.1.8.2, v1.8.0):
+* libvpx (v1.10.0, v.1.8.2, v1.8.0):
   - libvpx configure.sh needs patches to correctly build the arm64 with NDK standalone toolchains.
-  - Valid for libvpx v1.8.0 only, option removed for libvpx v1.8.2:<br/>
+  - Valid for libvpx v1.8.0 only, option removed for libvpx v1.8.2+:<br/>
     When --sdk-path is specified, libvpx configure uses SDK toolchains compiler (gcc/g++);
-    * ndk-r17c, ndk-r16b:<br/>
+    * ndk-r18b, ndk-r17c, ndk-r16b:<br/>
       To avoid missing stdlib.h and other errors, need to include the following two options for SDK toolchains:<br/>
       --extra-cflags="-isystem ${NDK}/sysroot/usr/include/${NDK_ABIARCH} -isystem ${NDK}/sysroot/usr/include"<br/>
       --libc=${NDK_SYSROOT} => use standalone toolchains directory.<br/>
-      libvpx v1.8.0 configure.sh has problem configure this with SDK properly
+      libvpx v1.8.0 configure.sh has a problem configure this with SDK properly
     * ndk-r18b: gcc option has been removed<br/>
       build failed with: /home/cmeng/workspace/ndk/ffmpeg-android/toolchain-android/bin/aarch64-linux-android-ld: cannot find -lgcc
   - libvpx v1.8.0: When using standalone toolchains, i.e. omit --sdk-path;
     * ndk-r18b, ndk-r17c, ndk-r16b: <br/>
       Build ok with ABIS=("arm64-v8a" "x86" "x86_64") but not "armeabi-v7a" and failed with:<br/>
     /tmp/vpx-conf-4350-25363.o(.ARM.exidx.text.main+0x0): error: undefined reference to '__aeabi_unwind_cpp_pr0' 
-  - For libvpx v1.8.2<br/>
+  - For libvpx v1.8.2+<br/>
     * ndk-r18b, ndk-r17c, ndk-r16b: <br/>
       All built OK.
 

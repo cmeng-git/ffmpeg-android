@@ -1,7 +1,7 @@
 #!/bin/bash
-. _settings.sh $*
+. _settings.sh "$@"
 
-pushd x264
+pushd x264 || exit
 X264_API="$(grep '#define X264_BUILD' < x264.h | sed 's/^.* \([1-9][0-9]*\).*$/\1/')"
 echo -e "\n\n** BUILD STARTED: x264-v${X264_API} for ${1} **"
 
@@ -51,13 +51,13 @@ make clean
 make -j${HOST_NUM_CORES} install || exit 1
 popd
 
-pushd ${PREFIX}/lib
+pushd ${PREFIX}/lib || exit
 if [[ -f libx264.so.$X264_API ]]; then
   mv libx264.so.${X264_API} libx264_${X264_API}.so
   sed -i "s/libx264.so.${X264_API}/libx264_${X264_API}.so/g" libx264_${X264_API}.so
   rm libx264.so
   ln -f -s libx264_${X264_API}.so libx264.so
 fi
-popd
+popd || exit
 
 echo -e "** BUILD COMPLETED: x264-v${X264_API} for ${1} **\n"

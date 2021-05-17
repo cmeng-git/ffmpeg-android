@@ -15,9 +15,11 @@
 # limitations under the License.
 
 ### The following scripts are based on vpx v1.6.1, v1.7.0 and v1.8.x configure file options ###
+# aTalk v2.6.1 uses libvpx-1.10.0
 # aTalk v1.8.1 and below uses libvpx-master i.e. 1.6.1+ (10/13/2017)
 # aTalk v1.8.2 uses libvpx-1.8.0
 # aTalk v2.3.2 uses libvpx-1.8.2
+# aTalk v2.6.1 uses libvpx-1.10.0
 
 ## Both problems #1 & #2 below have been fixed by patches from: https://android.googlesource.com/platform/external/libvpx/+/ca30a60d2d6fbab4ac07c63bfbf7bbbd1fe6a583
 ## However the compiled libjnvpx.so has problem when exec on x86_64 android platform:
@@ -33,9 +35,9 @@
 # 2. However libvpx-1.6.1 x86_64 has the same error
 # ./x86_64-linux-android/bin/ld: error: vpx/android/x86_64/lib/libvpx.a(deblock_sse2.asm.o): requires dynamic R_X86_64_PC32 reloc against 'vpx_rv' which may overflow at runtime; recompile with -fPIC
 
-. _settings.sh $*
-
-pushd libvpx
+. _settings.sh "$@"
+# libvpx v1.10.0
+pushd libvpx || return
 
 if [[ -f "./build/make/version.sh" ]]; then
   version=`"./build/make/version.sh" --bare .`
@@ -99,7 +101,7 @@ esac
   # must specified -libc from standalone toolchains, libvpx configure.sh cannot get the right arch to use
 
   # SDK toolchains has error with ndk-r18b; however ndk-R17c and ndk-r16b are ok (gcc/g++)
-  # SDK toolchains ndk-r18b is working with libvpx v1.8.2 without the sdk option
+  # SDK toolchains ndk-r18b is working with libvpx v1.10.0 & v1.8.2 without the sdk option
 
   # Standalone toolchains built has problem with ABIS="armeabi-v7a"
   # /tmp/vpx-conf-31901-2664.o(.ARM.exidx.text.main+0x0): error: undefined reference to '__aeabi_unwind_cpp_pr0'
@@ -127,7 +129,7 @@ if [[ $1 =~ x86.* ]]; then
 fi
 
 # When use --sdk-path option for libvpx v1.8.0; must use android-ndk-r17c or lower
-# For libvpx v1.8.2: in order to use standalone toolchanis, must not specified --sdk-path (option removed)
+# For libvpx v1.8.2+: in order to use standalone toolchanis, must not specified --sdk-path (option removed)
 #    --sdk-path=${NDK}
 
 make clean
@@ -148,11 +150,12 @@ make clean
   --disable-unit-tests \
   --enable-realtime-only \
   --enable-vp8 --enable-vp9 \
-  --enable-vp9-postproc --enable-vp9-highbitdepth \
+  --enable-vp9-postproc \
+  --enable-vp9-highbitdepth \
   --disable-webm-io || exit 1
 
 make -j${HOST_NUM_CORES} install || exit 1
   
-popd
+popd || return
 echo -e "** BUILD COMPLETED: vpx-${version} for ${1} **\n"
 

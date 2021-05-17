@@ -13,9 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Note: aTalk v2.3.1 is only compatible to ffmpeg v3.4.6
-
 # set -x
 
 # https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/Link-Options.html#Link-Options
@@ -27,15 +24,29 @@
 # -fuse-ld=gold: use ld.gold linker but unavailable for ABI mips and mips64
 # LDFLAGS='-pie -lc -lm -ldl -llog'
 
-. _settings.sh $*
+. _settings.sh "$@"
 
-pushd ffmpeg
+pushd ffmpeg || return
 if [[ -f "./ffbuild/version.sh" ]]; then
   VERSION=$(./ffbuild/version.sh .)
 else
   VERSION=$(./version.sh .)
 fi
 echo -e "\n\n** BUILD STARTED: ffmpeg-v${VERSION} for ${1} **"
+
+# Must include option --disable-asm; otherwise ffmpeg-3.4.6 has problem and crash system:
+# armeabi-v7a: org.atalk.android A/libc: Fatal signal 7 (SIGBUS), code 1, fault addr 0x9335c00c in tid 20032 (Loop thread: ne)
+# x86: ./i686-linux-android/bin/ld: warning: shared library text segment is not shareable
+# x86_64: e.g libswresample, libswscale, libavcodec:  requires dynamic R_X86_64_PC32 reloc against ...
+# libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available
+# TA_OPTIONS="--disable-ffserver --disable-asm"
+
+# Note: Use the folloowing option for ffmpeg 4.0+ build
+# Not valid for ffmpeg 4.0+: Removed the ffserver program
+#  --disable-ffserver \
+# Must include option --disable-asm for v4.1.6+ for x86 and x86_64 build;
+# libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available
+TA_OPTIONS=""
 
 case $1 in
   armeabi)
@@ -49,9 +60,12 @@ case $1 in
     LDFLAGS="${LDFLAGS} -Wl,-z,relro -Wl,-z,now"
   ;;
   x86)
+    # required for x86 in ffmpeg v4.0+ (see note above)
+    TA_OPTIONS="--disable-asm"
     LDFLAGS="${LDFLAGS}"
   ;;
   x86_64)
+    TA_OPTIONS="--disable-asm"
     LDFLAGS="${LDFLAGS}"
   ;;
   mips)
@@ -71,7 +85,7 @@ for m in "$@"
   do
     PREFIX_=${BASEDIR}/jni/$m/android/$1
     # PREFIX_=../jni/$m/android/$1
-    [ -d ${PREFIX}/lib/pkgconfig ] || mkdir -p ${PREFIX}/lib/pkgconfig
+    [[ -d ${PREFIX}/lib/pkgconfig ]] || mkdir -p ${PREFIX}/lib/pkgconfig
 
     case $m in
       x264)
@@ -190,7 +204,8 @@ make clean
 #  --extra-libs="-lgcc -lstdc++" \
 # -lstdc++ requires by openh264
 
-make -j${HOST_NUM_CORES} && make install || exit 1
-popd
+# make -j${HOST_NUM_CORES} && make install || exit 1
+make -j${HOST_NUM_CORES} install || exit 1
+popd || exit
 
 echo -e "** BUILD COMPLETED: ffmpeg-v${VERSION} for ${1} **\n"
