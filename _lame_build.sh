@@ -1,8 +1,9 @@
 #!/bin/bash
-. _settings.sh $*
 
-pushd lame
-LAME_VER="$(grep 'PACKAGE_VERSION =' < ./configure | sed 's/^.*\([1-9]\.[0-9]*\).*$/\1/')"
+. _settings.sh "$@"
+
+pushd lame || exit
+LAME_VER="$(grep 'PACKAGE_VERSION=' < ./configure | sed 's/^.*\([1-9]\.[0-9]*\).*$/\1/')"
 echo -e "\n\n** BUILD STARTED: lame-v${LAME_VER} for ${1} **"
 
 make clean
@@ -19,5 +20,5 @@ make clean
   --disable-shared || exit 1
 
 make -j${HOST_NUM_CORES} install || exit 1
-popd
 echo -e "** BUILD COMPLETED: lame-v${LAME_VER} for ${1} **\n"
+popd || exit

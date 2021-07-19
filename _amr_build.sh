@@ -1,9 +1,10 @@
 #!/bin/bash
-. _settings.sh $*
+. _settings.sh "$@"
 
-pushd opencore-amr
-X264_API="$(grep '#define X264_BUILD' < x264.h | sed 's/^.* \([1-9][0-9]*\).*$/\1/')"
-echo -e "\n\n** BUILD STARTED: x264-v${X264_API} for ${1} **"
+pushd opencore-amr || exit
+
+AMR_API="$(grep 'PACKAGE_VERSION=' < ${LIB_OPENCORE}/configure | sed 's/^.*\([0-9]\.[0-9]\.[0-9]*\).*$/\1/')"
+echo -e "\n\n** BUILD STARTED: opencore-amr-v${AMR_API} for ${1} **"
 
 # --disable-asm disable
 # Must exclude the option for arm64-v8a.
@@ -15,12 +16,6 @@ echo -e "\n\n** BUILD STARTED: x264-v${X264_API} for ${1} **"
 DISASM=""
 if [[ $1 =~ x86.* ]]; then
    DISASM="--disable-asm"
-fi
-
-# --bit-depth not valid for v152
-BITDEPTH="--bit-depth=all"
-if [[ X264_API -le 152 ]]; then
-  BITDEPTH=""
 fi
 
 make clean
@@ -36,11 +31,9 @@ make clean
   --enable-shared \
   --disable-opencl \
   --disable-thread \
-  ${BITDEPTH} \
   ${DISASM} \
   --disable-cli || exit 1
 
 make -j${HOST_NUM_CORES} install || exit 1
-popd
-
-echo -e "** BUILD COMPLETED: opencore-amr${X264_API} for ${1} **\n"
+echo -e "** BUILD COMPLETED: opencore-amr-v${AMR_API} for ${1} **\n"
+popd || true

@@ -19,20 +19,24 @@
 
 # When use --sdk-path option for libvpx v1.8.0; must use android-ndk-r17c or lower
 # May use android-ndk-r18b" - libvpx v1.10.0 and libvpx v1.8.2 are working with r18b without error
-
-if [[ -z $ANDROID_NDK ]]; then
+# lame needs android-ndk-r17c
+export ANDROID_NDK=/opt/android/android-ndk-r17c
+if [[ -z $ANDROID_NDK ]] || [[ ! -d $ANDROID_NDK ]] ; then
 	echo "You need to set ANDROID_NDK environment variable, exiting"
-	echo "Use: export ANDROID_NDK=/your/path/to/android-ndk"
+	echo "Use: export ANDROID_NDK=/your/path/to/android-ndk-rxx"
 	echo "e.g.: export ANDROID_NDK=/opt/android/android-ndk-r17c"
 	exit 1
 fi
+
 set -u
 
 # Never mix two api level to build static library for use on the same apk.
 # Set to API:21 for aTalk 64-bit architecture support
 # Does not build 64-bit arch if ANDROID_API is less than 21 i.e. the minimum supported API level for 64-bit.
 ANDROID_API=21
-NDK_ABI_VERSION=4.9
+
+# set STANDALONE_TOOLCHAINS to 0: SDK toolchains OR 1: standalone toolchains
+STANDALONE_TOOLCHAINS=1;
 
 # Built with command i.e. ./build-ffmpeg4android.sh or following with parameter [ABIS(x)]
 # Create custom ABIS or uncomment to build all supported abi for ffmpeg.
@@ -124,8 +128,8 @@ case $1 in
     CFLAGS="${CFLAGS_} -O3 -march=armv8-a"
       # Supported emulations: aarch64linux aarch64elf aarch64elf32 aarch64elf32b aarch64elfb armelf armelfb
       # aarch64linuxb aarch64linux32 aarch64linux32b armelfb_linux_eabi armelf_linux_eabi
-	  #-march=armv8-a or arch64linux: all are not valid for libvpx v1.8.2 build with standalone toolchains
-    LDFLAGS="${LDFLAGS_}" 
+	  #-march=armv8-a or arch64linux: all are not valid for libvpx v1.8.2/v1.10.0 build with standalone toolchains
+    LDFLAGS="${LDFLAGS_}"
     ASFLAGS=""
   ;;
   x86)
@@ -133,7 +137,7 @@ case $1 in
     HOST='i686-linux'
     NDK_ARCH='x86'
     NDK_ABIARCH='i686-linux-android'
-    CFLAGS="${CFLAGS_} -O3 -march=i686 -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
+    CFLAGS="${CFLAGS_} -O3 -march=${CPU} -mtune=intel -msse3 -mfpmath=sse -m32 -fPIC"
     LDFLAGS="-m32"
     ASFLAGS="-D__ANDROID__"
   ;;
@@ -142,7 +146,7 @@ case $1 in
     HOST='x86_64-linux'
     NDK_ARCH='x86_64'
     NDK_ABIARCH='x86_64-linux-android'
-    CFLAGS="${CFLAGS_} -O3 -march=x86-64 -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
+    CFLAGS="${CFLAGS_} -O3 -march=${CPU} -mtune=intel -msse4.2 -mpopcnt -m64 -fPIC"
     LDFLAGS=""
     ASFLAGS="-D__ANDROID__"
   ;;
@@ -173,18 +177,31 @@ esac
 # Create standalone toolchains for the specified architecture - use .py instead of the old .sh
 # However for ndk--r19b => Instead use:
 #    $ ${NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ src.cpp
-NDK_SYSROOT=${TOOLCHAIN_PREFIX}/sysroot
+if [[ ${STANDALONE_TOOLCHAINS} == 1 ]]; then
+  TOOLCHAIN_PREFIX=${BASEDIR}/toolchain-android
+  NDK_SYSROOT=${TOOLCHAIN_PREFIX}/sysroot
+  CC_=clang
+  CXX_=clang++
 
-if [[ ! -e ${TOOLCHAIN_PREFIX}/${NDK_ABIARCH} ]]; then
+  if [[ ! -e ${TOOLCHAIN_PREFIX}/${NDK_ABIARCH} ]]; then
     rm -rf ${TOOLCHAIN_PREFIX}
-fi
 
-# cmeng: must ensure AS JNI uses the same STL library or "system" if specified
-  [[ -d ${TOOLCHAIN_PREFIX} ]] || python ${NDK}/build/tools/make_standalone_toolchain.py \
-    --arch ${NDK_ARCH} \
-    --api ${ANDROID_API} \
-    --stl libc++ \
-    --install-dir=${TOOLCHAIN_PREFIX}
+  # Create standalone toolchains for the specified architecture - use .py instead of the old .sh
+  # However for ndk--r19b => Instead use:
+  #    $ ${NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ src.cpp
+  # cmeng: must ensure AS JNI uses the same STL library or "system" if specified
+    [[ -d ${TOOLCHAIN_PREFIX} ]] || python ${NDK}/build/tools/make_standalone_toolchain.py \
+      --arch ${NDK_ARCH} \
+      --api ${ANDROID_API} \
+      --stl libc++ \
+      --install-dir=${TOOLCHAIN_PREFIX}
+  fi
+else
+  TOOLCHAIN_PREFIX=${ANDROID_NDK}/toolchains/${NDK_ABIARCH}-49/prebuilt/linux-x86_64
+  NDK_SYSROOT=${ANDROID_NDK}/platforms/android-${ANDROID_API}/arch-${NDK_ARCH}
+  CC_=gcc
+  CXX_=g++
+fi
 
 # Define the install directory of the libs and include files etc
 # lame needs absolute path
@@ -201,9 +218,9 @@ export ASFLAGS="${ASFLAGS}"
 export LDFLAGS="${LDFLAGS} -L${NDK_SYSROOT}/usr/lib"
 
 export AR="${CROSS_PREFIX}ar"
-export AS="${CROSS_PREFIX}clang"
-export CC="${CROSS_PREFIX}clang"
-export CXX="${CROSS_PREFIX}clang++"
+export AS="${CROSS_PREFIX}${CC_}"
+export CC="${CROSS_PREFIX}${CC_}"
+export CXX="${CROSS_PREFIX}${CXX_}"
 export LD="${CROSS_PREFIX}ld"
 export STRIP="${CROSS_PREFIX}strip"
 export RANLIB="${CROSS_PREFIX}ranlib"
@@ -221,3 +238,35 @@ echo "### Use NDK=${NDK}"
 echo "### Use ANDROID_API=${ANDROID_API}"
 echo "### Install directory: PREFIX=${PREFIX}"
 echo "**********************************************"
+
+# Undefined reference in x264 when linked with ffmpeg for arm64-v8a
+# https://stackoverflow.com/questions/5555632/can-gcc-not-complain-about-undefined-references
+#
+#It is possible to avoid reporting undefined references - using --unresolved-symbols linker option.
+#
+#g++ mm.cpp -Wl,--unresolved-symbols=ignore-in-object-files
+#From man ld
+#
+#--unresolved-symbols=method
+#Determine how to handle unresolved symbols. There are four possible values for method:
+#
+#       ignore-all
+#           Do not report any unresolved symbols.
+#
+#       report-all
+#           Report all unresolved symbols.  This is the default.
+#
+#       ignore-in-object-files
+#           Report unresolved symbols that are contained in shared
+#           libraries, but ignore them if they come from regular object
+#           files.
+#
+#       ignore-in-shared-libs
+#           Report unresolved symbols that come from regular object
+#           files, but ignore them if they come from shared libraries.  This
+#           can be useful when creating a dynamic binary and it is known
+#           that all the shared libraries that it should be referencing
+#           are included on the linker's command line.
+#The behaviour for shared libraries on their own can also be controlled by the --[no-]allow-shlib-undefined option.
+#
+#Normally the linker will generate an error message for each reported unresolved symbol but the option --warn-unresolved-symbols can change this to a warning.

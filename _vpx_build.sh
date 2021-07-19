@@ -35,9 +35,12 @@
 # 2. However libvpx-1.6.1 x86_64 has the same error
 # ./x86_64-linux-android/bin/ld: error: vpx/android/x86_64/lib/libvpx.a(deblock_sse2.asm.o): requires dynamic R_X86_64_PC32 reloc against 'vpx_rv' which may overflow at runtime; recompile with -fPIC
 
+# set -x
+
 . _settings.sh "$@"
+
 # libvpx v1.10.0
-pushd libvpx || return
+pushd libvpx || exit
 
 if [[ -f "./build/make/version.sh" ]]; then
   version=`"./build/make/version.sh" --bare .`
@@ -132,13 +135,21 @@ fi
 # For libvpx v1.8.2+: in order to use standalone toolchanis, must not specified --sdk-path (option removed)
 #    --sdk-path=${NDK}
 
-make clean
+if [[ -f "config.log" ]]; then
+  config_target="$(grep "Configuring for target" < "config.log" | sed "s/^.* '\(.*\)'$/\1/")"
+  if [[ ${TARGET} != "${config_target}" ]]; then
+    make clean
+  fi
+else
+  make clean
+fi
+
+#  --extra-cflags="-isystem ${NDK_SYSROOT}/usr/include/${NDK_ABIARCH} -isystem ${NDK_SYSROOT}/usr/include" \
+#  --libc=${NDK_SYSROOT} \
+
 ./configure \
-  --extra-cflags="-isystem ${NDK_SYSROOT}/usr/include/${NDK_ABIARCH} -isystem ${NDK_SYSROOT}/usr/include" \
-  --libc=${NDK_SYSROOT} \
   --prefix=${PREFIX} \
   --target=${TARGET} \
-    ${CPU_DETECT} \
   --as=yasm \
   --enable-pic \
   --disable-docs \
@@ -155,7 +166,6 @@ make clean
   --disable-webm-io || exit 1
 
 make -j${HOST_NUM_CORES} install || exit 1
-  
-popd || return
 echo -e "** BUILD COMPLETED: vpx-${version} for ${1} **\n"
+popd || true
 

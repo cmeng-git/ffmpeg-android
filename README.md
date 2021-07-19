@@ -5,9 +5,9 @@
 <thead>
 <tr><td>library</td><td>version</td><td>platform support</td><td>arch support</td></tr>
 </thead>
-<tr><td>ffmpeg</td><td>4.1.1</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
+<tr><td>ffmpeg</td><td>4.4</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
+<tr><td>x264</td><td>163</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
 <tr><td>libvpx</td><td>1.10.0</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
-<tr><td>x264</td><td>160</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
 <tr><td>lame</td><td>3.100</td><td>android</td><td>armeabi-v7a arm64-v8a x86 x86_64</td></tr>
 </table>
 
@@ -23,7 +23,6 @@
 Note: *-Deprecated in android ndk-r16. Will be removed in ndk-r17.<br/>
 see https://developer.android.com/ndk/guides/abis.html#Supported ABIs <br/>
 ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-
 
 ## Instructions
 * Set environment ANDROID_NDK variable; not all ndk releases work with all modules/ABIS combinations
@@ -53,7 +52,7 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
 
 ## Linking with versioned shared library in Android NDK
 * Note: Manual changes as outlined below are not further required.<br/>
-  the latest _vpx_build.sh has included the scripts to perform the following steps automatically.<br/><br/>
+  the latest _vpx_build.sh has included the scripts to perform the following steps automatically.
 * Android has an issue with loading versioned .so shared libraries e.g. x264:
 * Causing error during run: java.lang.UnsatisfiedLinkError: dlopen failed: library "libx264.so.147" not found
 * Perform the following patches, if you want to link with shared .so libraries for x264.
@@ -66,10 +65,10 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
 * The scripts has been verified working with the following configurations:
   - NDK version: ndk-r17c (build may failed with lower or higher versions - see below)
   - ABIS: armeabi-v7a, arm64-v8a, x86, x86_64
-  - MODULES (with applied patches): ffmpeg-v4.1.1, libvpx-v1.10.0, x264-v160, lame-v3.100
+  - MODULES (with applied patches): ffmpeg-v4.4, libvpx-v1.10.0, x264-v163, lame-v3.100
   - ANDROID_API: 21
 
-* x264 (v160, v157 and v152):
+* x264 (v163, v161, v160, v157 and v152):
   - x264 option: --disable-asm<br/>
     Must exclude the option for arm64. Used by configure, config.mak and Makefile to define AS and to compile required *.S assembly files.<br/>
     Otherwise will have undefined references e.g. x264_8_... x264_10...<br/>
@@ -90,11 +89,10 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
   - libvpx v1.8.0: When using standalone toolchains, i.e. omit --sdk-path;
     * ndk-r18b, ndk-r17c, ndk-r16b: <br/>
       Build ok with ABIS=("arm64-v8a" "x86" "x86_64") but not "armeabi-v7a" and failed with:<br/>
-    /tmp/vpx-conf-4350-25363.o(.ARM.exidx.text.main+0x0): error: undefined reference to '__aeabi_unwind_cpp_pr0' 
-  - For libvpx v1.8.2+<br/>
+    /tmp/vpx-conf-4350-25363.o(.ARM.exidx.text.main+0x0): error: undefined reference to '__aeabi_unwind_cpp_pr0'
+  - For libvpx v1.8.2+
     * ndk-r18b, ndk-r17c, ndk-r16b: <br/>
       All built OK.
-
 
 * lame (v3.1000):
   - ndk-r18b - failed as lame need C++ instead of clang compiler
@@ -102,8 +100,8 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
   - ndk-r16b, ndk-r15c (build all)
   - PREFIX must use absolution path
 
-* ffmpeg (v4.1.1):
-  - Must include option --disable-asm for x86, otherwise <br/>
+* ffmpeg (v4.4):
+  - Must include option --disable-asm for x86 and x86_64, otherwise <br/>
     libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available<br/>
     ffmpeg (v1.0.10) => must also include this option for arm/arm64 build, otherwise errors during compilation 
   - ndk-r18b, ndk-r17c => give error on:<br/>

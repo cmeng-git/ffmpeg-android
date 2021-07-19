@@ -49,7 +49,6 @@ make clean
   --disable-cli || exit 1
 
 make -j${HOST_NUM_CORES} install || exit 1
-popd
 
 pushd ${PREFIX}/lib || exit
 if [[ -f libx264.so.$X264_API ]]; then
@@ -58,6 +57,6 @@ if [[ -f libx264.so.$X264_API ]]; then
   rm libx264.so
   ln -f -s libx264_${X264_API}.so libx264.so
 fi
-popd || exit
 
 echo -e "** BUILD COMPLETED: x264-v${X264_API} for ${1} **\n"
+popd || exit

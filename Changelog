@@ -1,6 +1,14 @@
 # Entries are sorted chronologically from oldest to youngest within each release,
 # releases are sorted from youngest to oldest.
 #=============================================================
+version 1.6.8 (2021/07/19)
+- Clean up scripts for all submodules build
+- Change method to determine ffmpeg version
+- include version check in init_update_libs.sh before taking action
+- include patch for libvpx-1.10.0
+- Scripts are verified for all latest version libraries only; see init_update_libs.sh
+
+#=============================================================
 version 1.6.7 (2021/05/17)
 - Clean up scripts for ffmpeg v4.4 build
 - Clean up scripts for x264 v161.3049 build

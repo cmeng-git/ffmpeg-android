@@ -26,13 +26,12 @@
 
 . _settings.sh "$@"
 
-pushd ffmpeg || return
-if [[ -f "./ffbuild/version.sh" ]]; then
-  VERSION=$(./ffbuild/version.sh .)
-else
-  VERSION=$(./version.sh .)
-fi
-echo -e "\n\n** BUILD STARTED: ffmpeg-v${VERSION} for ${1} **"
+LIB_FFMPEG=ffmpeg
+
+pushd ${LIB_FFMPEG} || return
+VERSION=$(cat RELEASE)
+
+echo -e "\n\n** BUILD STARTED: ${LIB_FFMPEG}-v${VERSION} for ${1} **"
 
 # Must include option --disable-asm; otherwise ffmpeg-3.4.6 has problem and crash system:
 # armeabi-v7a: org.atalk.android A/libc: Fatal signal 7 (SIGBUS), code 1, fault addr 0x9335c00c in tid 20032 (Loop thread: ne)
@@ -41,7 +40,7 @@ echo -e "\n\n** BUILD STARTED: ffmpeg-v${VERSION} for ${1} **"
 # libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available
 # TA_OPTIONS="--disable-ffserver --disable-asm"
 
-# Note: Use the folloowing option for ffmpeg 4.0+ build
+# Note: Use the following option for ffmpeg 4.0+ build
 # Not valid for ffmpeg 4.0+: Removed the ffserver program
 #  --disable-ffserver \
 # Must include option --disable-asm for v4.1.6+ for x86 and x86_64 build;
@@ -135,7 +134,7 @@ for m in "$@"
 # see https://github.com/tanersener/mobile-ffmpeg/issues/48 for solution
 
 # do no set ld option and use as=gcc for clang
-TC_OPTIONS="--nm=${NM} --ar=${AR} --as=${CROSS_PREFIX}gcc --strip=${STRIP} --cc=${CC} --cxx=${CXX}"
+TC_OPTIONS="--nm=${NM} --ar=${AR} --as=${AS} --strip=${STRIP} --cc=${CC} --cxx=${CXX}"
 # Below option not valid for ffmpeg-v1.0.10 (aTalk)
 # CODEC_DISABLED='--disable-alsa --disable-appkit --disable-avfoundation --disable-libv4l2 --disable-audiotoolbox'
 # --disable-programs   --enable-x86asm \
@@ -148,9 +147,8 @@ FFMPEG_PKG_CONFIG=${BASEDIR}/ffmpeg-pkg-config
 #  Must include option --disable-asm for x86, otherwise
 # libavcodec/x86/cabac.h:193:9: error: inline assembly requires more registers than available
 # ffmpeg-1.0.10 has inline assembly error when using clang
-DISASM=""
 if [[ $1 =~ x86.* ]] || [[ "${VERSION}" == 1.0.10 ]]; then
-   DISASM="--disable-asm"
+   TA_OPTIONS="--disable-asm"
 fi
 
 PROGRAM="--disable-programs"
@@ -168,7 +166,7 @@ make clean
   ${TC_OPTIONS} \
   --enable-static \
   --disable-shared \
-  ${DISASM} \
+  ${TA_OPTIONS} \
   --enable-cross-compile \
   --target-os=android \
   --enable-pic \
@@ -204,8 +202,6 @@ make clean
 #  --extra-libs="-lgcc -lstdc++" \
 # -lstdc++ requires by openh264
 
-# make -j${HOST_NUM_CORES} && make install || exit 1
 make -j${HOST_NUM_CORES} install || exit 1
+echo -e "** BUILD COMPLETED: ${LIB_FFMPEG}-v${VERSION} for ${1} **\n"
 popd || exit
-
-echo -e "** BUILD COMPLETED: ffmpeg-v${VERSION} for ${1} **\n"

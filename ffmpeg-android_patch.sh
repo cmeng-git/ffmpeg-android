@@ -14,7 +14,7 @@ fi
 if [[ ! (${ffmpeg_VER} > 3.4.8) ]]; then
   echo -e "### Applying patches for ffmpeg-v${ffmpeg_VER} modules"
 
-	if [[ ${VERSION} == 1.0.10 ]]; then
+	if [[ ${ffmpeg_VER} == 1.0.10 ]]; then
 	    patch  -p0 -N --dry-run --silent -f ./ffmpeg/configure < ./patches/ffmpeg-1.0.10/10.ffmpeg-configure.patch 1>/dev/null
 	    if [[ $? -eq 0 ]]; then
 	      patch -p0 -f ./ffmpeg/configure < ./patches/ffmpeg-1.0.10/10.ffmpeg-configure.patch
@@ -63,6 +63,24 @@ if [[ ! (${ffmpeg_VER} > 3.4.8) ]]; then
 fi
 
 # ===============================
+# x264 patches - seems no require for the latest source x264-snapshot-20191217-2245.tar.bz2 or v161
+# ===============================
+ if [[ " ${MODULES[@]} " =~ " x264 " ]]; then
+     ./x264/version.sh > x264_version
+     X264_REV="$(grep '#define X264_REV ' < ./x264_version | sed 's/^.* \([1-9][0-9]*\)$/\1/')"
+
+     if [[ ! (${X264_REV} == 3049) ]]; then
+       X264_API="$(grep '#define X264_BUILD' < x264/x264.h | sed 's/^.* \([1-9][0-9]*\)$/\1/')"
+       echo -e "### Applying patches for x264-v${X264_API}.${X264_REV} modules"
+
+       patch  -p0 -N --dry-run --silent -f ./x264/configure < ./patches/21.x264_configure.patch 1>/dev/null
+       if [[ $? -eq 0 ]]; then
+         patch -p0 -f ./x264/configure < ./patches/21.x264_configure.patch
+       fi
+     fi
+ fi
+
+# ===============================
 # libvpx patches for version 1.8.0, 1.7.0 and 1.6.1+
 # None is applicable and are skipped for the libvpx version 1.10.0
 # ===============================
@@ -102,22 +120,17 @@ if [[ (${version} < v1.10.0 ) ]]; then
 fi
 
 # ===============================
-# x264 patches - seems no require for the latest source x264-snapshot-20191217-2245.tar.bz2 or v161
+# Patches for libvpx version 1.10.0
+# v1.10.0 need below patch for vp9 encode to work properly; master copy has been fixed
 # ===============================
- if [[ " ${MODULES[@]} " =~ " x264 " ]]; then
-     ./x264/version.sh > x264_version
-     X264_REV="$(grep '#define X264_REV ' < ./x264_version | sed 's/^.* \([1-9][0-9]*\)$/\1/')"
 
-     if [[ ! (${X264_REV} == 3049) ]]; then
-       X264_API="$(grep '#define X264_BUILD' < x264/x264.h | sed 's/^.* \([1-9][0-9]*\)$/\1/')"
-       echo -e "### Applying patches for x264-v${X264_API}.${X264_REV} modules"
-
-       patch  -p0 -N --dry-run --silent -f ./x264/configure < ./patches/21.x264_configure.patch 1>/dev/null
-       if [[ $? -eq 0 ]]; then
-         patch -p0 -f ./x264/configure < ./patches/21.x264_configure.patch
-       fi
-     fi
- fi
+if [[ "${version}" == v1.10.0 ]]; then
+  echo -e "\n*** Applying patches for: ${LIB_VPX} (${version}) ***"
+  patch  -p0 -N --dry-run --silent -f ./${LIB_VPX}/vpx/vpx_encoder.h < ./patches/10.vpx_encoder_h.patch 1>/dev/null
+  if [[ $? -eq 0 ]]; then
+    patch -p0 -f ./${LIB_VPX}/vpx/vpx_encoder.h < ./patches/10.vpx_encoder_h.patch
+  fi
+fi
 
 # ===============================
 # lame patches
