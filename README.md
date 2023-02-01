@@ -25,6 +25,8 @@ see https://developer.android.com/ndk/guides/abis.html#Supported ABIs <br/>
 ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 
 ## Instructions
+* Note: Please refer to https://github.com/cmeng-git/atalk-android/tree/master/aTalk/jni for the latest
+  updated scripts and build instructions. This repository is not further maintained since v1.6.8.
 * Set environment ANDROID_NDK variable; not all ndk releases work with all modules/ABIS combinations
   - export ANDROID_NDK={Android NDK Base Path}<br/>
      e.g. export ANDROID_NDK=/opt/android/android-ndk-r17c (recommended);
@@ -89,7 +91,7 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
   - libvpx v1.8.0: When using standalone toolchains, i.e. omit --sdk-path;
     * ndk-r18b, ndk-r17c, ndk-r16b: <br/>
       Build ok with ABIS=("arm64-v8a" "x86" "x86_64") but not "armeabi-v7a" and failed with:<br/>
-    /tmp/vpx-conf-4350-25363.o(.ARM.exidx.text.main+0x0): error: undefined reference to '__aeabi_unwind_cpp_pr0'
+      /tmp/vpx-conf-4350-25363.o(.ARM.exidx.text.main+0x0): error: undefined reference to '__aeabi_unwind_cpp_pr0'
   - For libvpx v1.8.2+
     * ndk-r18b, ndk-r17c, ndk-r16b: <br/>
       All built OK.
@@ -147,7 +149,7 @@ ffmpeg-andorid releases > v1.5.0 will only verify ABIS=("armeabi-v7a" "arm64-v8a
 * All the information provided here are by trial and error; compiling and linkage are very sensitive to the<br/>
   modules version, configure options, and the NDK version used. You are advice to build without any changes<br/>
   to the scripts provided here to confirm working, before attempt to make any modifications.
-   
+  
 ## Note:
 * The scripts in this folder are not compatible with Unified Headers:<br/>
 See https://android.googlesource.com/platform/ndk/+/master/docs/UnifiedHeaders.md#supporting-unified-headers-in-your-build-system
@@ -186,5 +188,4 @@ Please refer to the following sites which may offer solution for problems you ma
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
 
